@@ -15,6 +15,7 @@ def stage_launch(stage):
                     overwrite='false', rviz='false', publish_stamped='true',
                     initial_x='0.0', initial_y='0.0', initial_yaw='0.0',
                     scan_topic='/scan', joint_states_topic='/joint_states', cmd_vel_topic='/cmd_vel',
+                    tf_topic='/tf', tf_static_topic='/tf_static',
                     params_file=os.path.join(share, 'config', 'params.yaml'))
     args = [DeclareLaunchArgument(k, default_value=v) for k, v in defaults.items()]
     p = {k: ParameterValue(LaunchConfiguration(k), value_type=t) for k, t in (
@@ -25,6 +26,8 @@ def stage_launch(stage):
         ('/scan', LaunchConfiguration('scan_topic')),
         ('/joint_states', LaunchConfiguration('joint_states_topic')),
         ('/cmd_vel', LaunchConfiguration('cmd_vel_topic')),
+        ('/tf', LaunchConfiguration('tf_topic')),
+        ('/tf_static', LaunchConfiguration('tf_static_topic')),
     ]
     nodes = [Node(package='tp1_teach_repeat', executable='localization', output='screen',
                   parameters=[LaunchConfiguration('params_file'), p],

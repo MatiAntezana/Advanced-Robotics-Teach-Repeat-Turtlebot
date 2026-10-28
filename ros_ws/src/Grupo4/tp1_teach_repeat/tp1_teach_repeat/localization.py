@@ -138,9 +138,15 @@ class Localization(Node):
 
     def on_joint(self, msg):
         t = ns(msg.header.stamp)
+        left_name, right_name = self.p['left_joint'], self.p['right_joint']
+        if left_name not in msg.name or right_name not in msg.name:
+            candidates_left = [n for n in msg.name if 'left' in n.lower() and 'wheel' in n.lower()]
+            candidates_right = [n for n in msg.name if 'right' in n.lower() and 'wheel' in n.lower()]
+            if candidates_left and candidates_right:
+                left_name, right_name = candidates_left[0], candidates_right[0]
         try:
-            values = np.array([msg.position[msg.name.index(self.p[k])]
-                               for k in ('left_joint', 'right_joint')])
+            values = np.array([msg.position[msg.name.index(k)]
+                               for k in (left_name, right_name)])
         except (ValueError, IndexError):
             self.get_logger().warning('JointState sin ambas ruedas por nombre', throttle_duration_sec=3.)
             return
@@ -177,9 +183,14 @@ class Localization(Node):
 
     def cloud(self, msg):
         # Usar la extrínseca real base_link <- láser; nunca suponer sensor centrado.
-        try:
-            tf = self.buffer.lookup_transform('base_link', msg.header.frame_id, Time())
-        except TransformException:
+        tf = None
+        for base in ('base_link', 'tb4_2/base_link', 'tb4_1/base_link'):
+            try:
+                tf = self.buffer.lookup_transform(base, msg.header.frame_id, Time())
+                break
+            except TransformException:
+                pass
+        if tf is None:
             self.get_logger().warning(f'Esperando TF base_link <- {msg.header.frame_id}', throttle_duration_sec=3.)
             return None
         r = np.asarray(msg.ranges)
