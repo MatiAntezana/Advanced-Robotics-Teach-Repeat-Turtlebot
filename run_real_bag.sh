@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-ROBOT_ID="${ROBOT_ID:-2}"
+ROBOT_ID="${ROBOT_ID:-1}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "${SCRIPT_DIR}/evidence"
 

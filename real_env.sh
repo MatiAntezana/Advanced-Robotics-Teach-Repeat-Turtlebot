@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Uso: source real_env.sh [1|2]   (por defecto Robot 1)
-ROBOT_ID="${1:-${ROBOT_ID:-2}}"
+ROBOT_ID="${1:-${ROBOT_ID:-1}}"
 
 if [ "$ROBOT_ID" == "2" ]; then
   export ROS_DISCOVERY_SERVER="172.23.16.88:11811"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-ROBOT_ID="${ROBOT_ID:-${1:-2}}"
+ROBOT_ID="${ROBOT_ID:-${1:-1}}"
 
 if [ "$ROBOT_ID" == "2" ]; then
   TARGET_IP="172.23.16.88"
