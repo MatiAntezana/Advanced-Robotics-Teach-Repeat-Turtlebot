@@ -222,9 +222,11 @@ class Localization(Node):
                 step = self.icp.align(points, self.prev_cloud, guess)
                 dt = (t-self.last_scan_ns)*1e-9
                 if step is None or np.linalg.norm(step[:2]) > max(0.15, 0.5*dt) or abs(step[2]) > max(0.25, 2.*dt):
-                    self.get_logger().warning('ICP rechazado: calidad o movimiento no plausible', throttle_duration_sec=2.)
-                    return
-                estimate = compose(self.prev_scan_pose, step)
+                    if self.mode == 'lidar':
+                        self.get_logger().warning('ICP rechazado: calidad o movimiento no plausible', throttle_duration_sec=2.)
+                        return
+                else:
+                    estimate = compose(self.prev_scan_pose, step)
             if self.stage == 'teach' and self.p['teach_submap_keyframes'] > 0:
                 # Las anclas fijas evitan sumar el error de cada scan consecutivo.
                 nearby = [f for f in self.frames[-int(self.p['teach_submap_keyframes']):] if len(f['points']) >= 20]

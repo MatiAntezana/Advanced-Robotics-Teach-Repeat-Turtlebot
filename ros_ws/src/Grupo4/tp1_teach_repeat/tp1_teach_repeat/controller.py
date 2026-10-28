@@ -52,11 +52,20 @@ class Controller(Node):
     def tick(self):
         v, w = 0., 0.
         if self.target is not None:
-            age = (self.get_clock().now().nanoseconds - ns(self.target.header.stamp))*1e-9
-            if 0 <= age <= self.p['target_timeout'] and time.monotonic()-self.received <= self.p['target_timeout']:
+            is_sim = bool(self.get_parameter('use_sim_time').value)
+            fresh = (time.monotonic() - self.received <= self.p['target_timeout'])
+            if is_sim:
+                age = (self.get_clock().now().nanoseconds - ns(self.target.header.stamp))*1e-9
+                fresh = fresh and (0 <= age <= self.p['target_timeout'])
+            if fresh:
                 p = self.target.pose.position
                 options = {k: val for k, val in self.p.items() if k not in ('control_rate', 'target_timeout')}
                 v, w = polar_command((p.x, p.y, yaw(self.target.pose.orientation)), **options)
+                self.get_logger().info(f'Tracking target: rho={math.hypot(p.x, p.y):.2f}m -> v={v:.2f}m/s, w={w:.2f}rad/s', throttle_duration_sec=2.0)
+            else:
+                self.get_logger().warning('Setpoint expirado o reloj desfasado', throttle_duration_sec=2.0)
+        else:
+            self.get_logger().warning('Esperando setpoint en /tnr/setpoint...', throttle_duration_sec=3.0)
         self.command(v, w)
 
 
