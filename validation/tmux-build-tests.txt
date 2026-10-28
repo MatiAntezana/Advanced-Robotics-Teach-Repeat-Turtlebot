@@ -27,7 +27,7 @@ pluggy._manager.PluginValidationError: Plugin 'launch_testing' for hook 'pytest_
 hookimpl definition: pytest_pycollect_makemodule(path, parent)
 Argument(s) {'path'} are declared in the hookimpl but can not be found in the hookspec
 (base) matias@MacBook-Air-de-Matias-4 Advance-Robotics-tp1 % pixi run --frozen test
-✨ Pixi task (test): env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest ros_ws/src/Grupo4/tp1_teach_repeat/test -v
+Pixi task (test): env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest ros_ws/src/Grupo4/tp1_teach_repeat/test -v
 =================================================================== test session starts ===================================================================
 platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/matias/5-TO/Robotica-Avanzada/Advance-Robotics-tp1/.pixi/envs/default/bin/python
 cachedir: .pytest_cache
@@ -44,24 +44,24 @@ ros_ws/src/Grupo4/tp1_teach_repeat/test/test_core.py::test_atomic_route_roundtri
 
 ==================================================================== 7 passed in 2.53s ====================================================================
 (base) matias@MacBook-Air-de-Matias-4 Advance-Robotics-tp1 % pixi run --frozen build
-✨ Pixi task (build): bash -c 'cd ros_ws && colcon build'
+Pixi task (build): bash -c 'cd ros_ws && colcon build'
 Starting >>> tp1_teach_repeat
 Finished <<< tp1_teach_repeat [1.29s]
 
 Summary: 1 package finished [1.42s]
 (base) matias@MacBook-Air-de-Matias-4 Advance-Robotics-tp1 % pixi run --frozen build
-✨ Pixi task (build): bash -c 'cd ros_ws && colcon build'
+Pixi task (build): bash -c 'cd ros_ws && colcon build'
 Starting >>> tp1_teach_repeat
 Finished <<< tp1_teach_repeat [1.26s]
 
 Summary: 1 package finished [1.38s]
 (base) matias@MacBook-Air-de-Matias-4 Advance-Robotics-tp1 % pixi run --frozen build && pixi run --frozen test
-✨ Pixi task (build): bash -c 'cd ros_ws && colcon build'
+Pixi task (build): bash -c 'cd ros_ws && colcon build'
 Starting >>> tp1_teach_repeat
 Finished <<< tp1_teach_repeat [1.24s]
 
 Summary: 1 package finished [1.37s]
-✨ Pixi task (test): env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest ros_ws/src/Grupo4/tp1_teach_repeat/test -v
+Pixi task (test): env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest ros_ws/src/Grupo4/tp1_teach_repeat/test -v
 =================================================================== test session starts ===================================================================
 platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/matias/5-TO/Robotica-Avanzada/Advance-Robotics-tp1/.pixi/envs/default/bin/python
 cachedir: .pytest_cache
@@ -94,12 +94,12 @@ sre_constants' is deprecated
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ============================================================= 11 passed, 2 warnings in 2.36s ==============================================================
 (base) matias@MacBook-Air-de-Matias-4 Advance-Robotics-tp1 % pixi run --frozen build && pixi run --frozen test
-✨ Pixi task (build): bash -c 'cd ros_ws && colcon build'
+Pixi task (build): bash -c 'cd ros_ws && colcon build'
 Starting >>> tp1_teach_repeat
 Finished <<< tp1_teach_repeat [1.50s]
 
 Summary: 1 package finished [1.62s]
-✨ Pixi task (test): env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest ros_ws/src/Grupo4/tp1_teach_repeat/test -v
+Pixi task (test): env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest ros_ws/src/Grupo4/tp1_teach_repeat/test -v
 =================================================================== test session starts ===================================================================
 platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/matias/5-TO/Robotica-Avanzada/Advance-Robotics-tp1/.pixi/envs/default/bin/python
 cachedir: .pytest_cache

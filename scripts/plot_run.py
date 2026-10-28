@@ -10,9 +10,9 @@ Genera gráficos o animaciones idénticos al formato marauder_ws/Sprunk:
 - Tiempo transcurrido 't = XX.X s'
 
 Uso:
-  python3 scripts/plot_run.py --bag evidence/teach_bag_encoders --route routes/lab_route_encoders.json --out evidence/teach_encoders.png
-  python3 scripts/plot_run.py --bag evidence/repeat_bag_mixed --route routes/lab_route_mixed.json --out evidence/repeat_mixed.png
-  python3 scripts/plot_run.py --bag evidence/repeat_bag_mixed --route routes/lab_route_mixed.json --out evidence/repeat_mixed.mp4 --animate
+  python3 scripts/plot_run.py --bag evidence/laboratorio/teach_bag_encoders --route routes/lab_route_encoders.json --out evidence/teach_encoders.png
+  python3 scripts/plot_run.py --bag evidence/laboratorio/repeat_bag_mixed --route routes/lab_route_mixed.json --out evidence/repeat_mixed.png
+  python3 scripts/plot_run.py --bag evidence/laboratorio/repeat_bag_mixed --route routes/lab_route_mixed.json --out evidence/repeat_mixed.mp4 --animate
 """
 
 import argparse
@@ -235,7 +235,7 @@ def plot_static(bag_path, route_path, out_file, title=None, target_time=None):
     os.makedirs(os.path.dirname(os.path.abspath(out_file)), exist_ok=True)
     fig.savefig(out_file, dpi=130)
     plt.close(fig)
-    print(f"✅ Gráfico generado exitosamente en: {out_file}")
+    print(f"Gráfico generado exitosamente en: {out_file}")
 
 
 def main():

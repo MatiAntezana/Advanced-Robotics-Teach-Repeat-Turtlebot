@@ -1,0 +1,78 @@
+{
+  "metrics": [
+    {
+      "mode": "encoders",
+      "completed_in_recording": false,
+      "observed_window_s": 23.844017205,
+      "completion_time_s": null,
+      "last_reference_index": 21,
+      "final_reference_index": 112,
+      "reference_index_percent": 18.75,
+      "teach_polyline_length_m": 18.74703227526019,
+      "observed_cross_track_rms_m": 0.010413594517975468,
+      "observed_cross_track_max_m": 0.04490156438534589,
+      "route_match_p95_m": 4.47545209131181e-16,
+      "first_status_receipt_ns": 1793216570566134135,
+      "analysis_end_receipt_ns": 1793216594410151340,
+      "independent_ground_truth": false
+    },
+    {
+      "mode": "lidar",
+      "completed_in_recording": false,
+      "observed_window_s": 43.742838896,
+      "completion_time_s": null,
+      "last_reference_index": 33,
+      "final_reference_index": 115,
+      "reference_index_percent": 28.695652173913043,
+      "teach_polyline_length_m": 19.485528919736602,
+      "observed_cross_track_rms_m": 0.0572004901234252,
+      "observed_cross_track_max_m": 0.09070640994590076,
+      "route_match_p95_m": 4.577566798522237e-16,
+      "first_status_receipt_ns": 1793219410292275474,
+      "analysis_end_receipt_ns": 1793219454035114370,
+      "independent_ground_truth": false
+    },
+    {
+      "mode": "mixed",
+      "completed_in_recording": true,
+      "observed_window_s": 111.300803119,
+      "completion_time_s": 111.300800911,
+      "last_reference_index": 112,
+      "final_reference_index": 112,
+      "reference_index_percent": 100.0,
+      "teach_polyline_length_m": 19.771850353890688,
+      "observed_cross_track_rms_m": 0.01780142618828056,
+      "observed_cross_track_max_m": 0.11282886238647177,
+      "route_match_p95_m": 8.94054625092063e-16,
+      "first_status_receipt_ns": 1793219545367770348,
+      "analysis_end_receipt_ns": 1793219656668573467,
+      "independent_ground_truth": false
+    }
+  ],
+  "sources": [
+    {
+      "path": "routes/lab_route_encoders.json",
+      "sha256": "a4b71e7d7f808a02fe8700428eb589a11a6fef44430abecf581f05fc9fa09310"
+    },
+    {
+      "path": "evidence/repeat_bag_encoders/repeat_bag_encoders_0.db3",
+      "sha256": "5f7e88793d34d68aac39e6bd0ae070fc35ad8eda258937d8a44baa300b671d3f"
+    },
+    {
+      "path": "routes/lab_route_lidar.json",
+      "sha256": "91c83ad0b5debba59d1b077c4c721ec25609663102ba51b03440b1a072fb8319"
+    },
+    {
+      "path": "evidence/repeat_bag_lidar/repeat_bag_lidar_0.db3",
+      "sha256": "11179c741be570a9a7780c9380ee0c5df0ce8868b243be24ef8a9b8e81b602c3"
+    },
+    {
+      "path": "routes/lab_route_mixed.json",
+      "sha256": "b0f1c4f2d8ce9bb7caaa8682908d32ca028af7443b7ec628f9555d05a040aff1"
+    },
+    {
+      "path": "evidence/repeat_bag_mixed/repeat_bag_mixed_0.db3",
+      "sha256": "918ee4fe6d346d3837f5343427697fe59be04a648c6a4d345aafd3b9339fc949"
+    }
+  ]
+}
