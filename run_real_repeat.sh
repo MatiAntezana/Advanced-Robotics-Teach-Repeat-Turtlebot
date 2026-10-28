@@ -30,5 +30,5 @@ ros2 launch tp1_teach_repeat repeat.launch.py \
   publish_stamped:=false \
   params_file:="${SCRIPT_DIR}/params_tb4.yaml" \
   scan_topic:=/tb4_2/scan \
-  joint_states_topic:=/tb4_2/joint_states \
+  joint_states_topic:=/tnr/joint_states \
   cmd_vel_topic:=/tb4_2/cmd_vel

@@ -31,5 +31,5 @@ ros2 run tp1_teach_repeat localization --ros-args \
   -p overwrite:=true \
   --params-file "${SCRIPT_DIR}/params_tb4.yaml" \
   -r /scan:=/tb4_2/scan \
-  -r /joint_states:=/tb4_2/joint_states \
+  -r /joint_states:=/tnr/joint_states \
   -r /cmd_vel:=/tb4_2/cmd_vel
