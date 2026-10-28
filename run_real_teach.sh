@@ -2,7 +2,7 @@
 set -e
 
 MODE="${1:-mixed}"
-ROBOT_ID="${ROBOT_ID:-1}"
+ROBOT_ID="${ROBOT_ID:-2}"
 
 if [ "$ROBOT_ID" == "2" ]; then
   TARGET_IP="172.23.16.88"
