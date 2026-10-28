@@ -28,7 +28,9 @@ cleanup() {
   ros2 service call /tnr/save_route std_srvs/srv/Trigger '{}' > /dev/null 2>&1 || true
   sleep 1
   echo "Cerrando rosbag..."
-  kill -2 $BAG_PID 2>/dev/null || true
+  kill -INT $BAG_PID 2>/dev/null || true
+  sleep 0.5
+  kill -15 $BAG_PID 2>/dev/null || true
   wait $BAG_PID 2>/dev/null || true
   echo "LISTO: ${ROUTE_FILE} | ${BAG_DIR}"
 }
