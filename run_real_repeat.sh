@@ -44,4 +44,5 @@ ros2 launch tp1_teach_repeat repeat.launch.py \
   joint_states_topic:="${NS}/joint_states" \
   cmd_vel_topic:="${NS}/cmd_vel" \
   tf_topic:="${NS}/tf" \
-  tf_static_topic:="${NS}/tf_static"
+  tf_static_topic:="${NS}/tf_static" \
+  rviz:="${RVIZ:-false}"
