@@ -2,7 +2,7 @@
 set -e
 
 MODE="${1:-mixed}"
-ROBOT_ID="${ROBOT_ID:-1}"
+ROBOT_ID="${ROBOT_ID:-2}"
 
 if [ -n "$2" ]; then
   ROUTE_FILE="$2"

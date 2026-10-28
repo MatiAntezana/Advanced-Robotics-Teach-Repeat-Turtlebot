@@ -2,7 +2,7 @@
 set -e
 
 MODE="${1:-lidar}"
-ROBOT_ID="${ROBOT_ID:-1}"
+ROBOT_ID="${ROBOT_ID:-2}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "${SCRIPT_DIR}/evidence"
 
