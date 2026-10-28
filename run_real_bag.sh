@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-BAG_NAME="${1:-bag_lab_$(date +%Y%m%d_%H%M%S)}"
 ROBOT_ID="${ROBOT_ID:-1}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+mkdir -p "${SCRIPT_DIR}/evidence"
+
+NAME="${1:-bag_$(date +%Y%m%d_%H%M%S)}"
+# Si no incluye ruta, guardar dentro de evidence/
+if [[ "$NAME" == *"/"* ]]; then
+  OUT_PATH="${NAME}"
+else
+  OUT_PATH="${SCRIPT_DIR}/evidence/${NAME}"
+fi
 
 if [ "$ROBOT_ID" == "2" ]; then
   TARGET_IP="172.23.16.88"
@@ -23,12 +32,12 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 source /opt/ros/humble/setup.bash 2>/dev/null || true
 
 echo "🔴 ==================================================="
-echo "🔴 GRABANDO ROSBAG EN: ${BAG_NAME}"
+echo "🔴 GRABANDO ROSBAG EN: ${OUT_PATH}"
 echo "🔴 Grabando tópicos de Robot ${ROBOT_ID} y Teach & Repeat..."
 echo "🔴 Para detener la grabación: presionar Ctrl+C"
 echo "🔴 ==================================================="
 
-ros2 bag record -o "${BAG_NAME}" \
+ros2 bag record -o "${OUT_PATH}" \
   "${NS}/scan" \
   "${NS}/odom" \
   "${NS}/cmd_vel" \
