@@ -1,0 +1,33 @@
+tnr_localization:
+  ros__parameters:
+    wheel_radius: 0.036
+    wheel_separation: 0.233
+    left_joint: left_wheel_joint
+    right_joint: right_wheel_joint
+    joint_angles_wrapped: false
+    keyframe_distance: 0.20
+    keyframe_angle: 0.25
+    icp_distance: 0.30
+    icp_fitness: 0.50
+    icp_rmse: 0.12
+    min_range: 0.15
+    max_range: 6.0
+    scan_timeout: 1.0
+    teach_submap_keyframes: 3
+    publish_rate: 50.0
+    map_resolution: 0.04
+    keyframe_label_stride: 3
+    position_tolerance: 0.04
+    yaw_tolerance: 0.08
+tnr_controller:
+  ros__parameters:
+    control_rate: 20.0
+    target_timeout: 0.8
+    max_v: 0.15
+    max_w: 0.8
+    k_rho: 0.9
+    k_alpha: 2.2
+    k_beta: -0.6
+    k_yaw: 1.5
+    position_tolerance: 0.04
+    yaw_tolerance: 0.08
