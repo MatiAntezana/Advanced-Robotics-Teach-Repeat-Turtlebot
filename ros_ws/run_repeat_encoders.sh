@@ -1,5 +1,5 @@
 #!/bin/bash
-ROBOT_ID="${ROBOT_ID:-2}"
+ROBOT_ID="${ROBOT_ID:-1}"
 turtlebot_mode "$ROBOT_ID"
 source /opt/ros/humble/setup.bash
 source install/setup.bash
