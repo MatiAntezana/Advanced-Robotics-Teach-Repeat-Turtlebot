@@ -40,9 +40,9 @@ rosbag2_bagfile_information:
   compression_format: ""
   compression_mode: ""
   relative_file_paths:
-    - bag_repeat_robot1_0.db3
+    - repeat_bag_mixed_0.db3
   files:
-    - path: bag_repeat_robot1_0.db3
+    - path: repeat_bag_mixed_0.db3
       starting_time:
         nanoseconds_since_epoch: 1793208145720330199
       duration:
