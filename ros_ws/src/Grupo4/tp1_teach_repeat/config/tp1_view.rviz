@@ -158,9 +158,9 @@ Visualization Manager:
     Current:
       Class: rviz_default_plugins/TopDownOrtho
       Angle: 0
-      Scale: 85
-      X: 2
-      Y: 0.5
+      Scale: 65
+      X: 1.5
+      Y: 3.0
       Target Frame: <Fixed Frame>
 Window Geometry:
   Width: 1250

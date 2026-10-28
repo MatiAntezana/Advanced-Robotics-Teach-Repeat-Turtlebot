@@ -95,6 +95,9 @@ class Localization(Node):
         self.last_visual_state = None
         self.map_cache_key, self.map_cache = None, None
         self.pose = np.array([self.p['initial_x'], self.p['initial_y'], self.p['initial_yaw']])
+        if self.stage == 'repeat' and self.frames:
+            if self.p['initial_x'] == 0.0 and self.p['initial_y'] == 0.0 and self.p['initial_yaw'] == 0.0:
+                self.pose = np.array(self.frames[0]['pose'])
         self.wheel = np.zeros(3)
         self.correction = self.pose.copy()
         self.history = deque(maxlen=2000)
