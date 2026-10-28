@@ -4,6 +4,12 @@ set -e
 MODE="${1:-mixed}"
 ROBOT_ID="${ROBOT_ID:-2}"
 
+if [ -n "$2" ]; then
+  ROUTE_FILE="$2"
+else
+  ROUTE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/routes/lab_route_${MODE}.json"
+fi
+
 if [ "$ROBOT_ID" == "2" ]; then
   TARGET_IP="172.23.16.88"
   NS="/tb4_2"
@@ -23,7 +29,7 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS_DIR="${SCRIPT_DIR}/ros_ws"
 
-source /opt/ros/humble/setup.bash
+source /opt/ros/humble/setup.bash 2>/dev/null || true
 if [ -f "${WS_DIR}/install/setup.bash" ]; then
   source "${WS_DIR}/install/setup.bash"
 fi
@@ -33,14 +39,14 @@ mkdir -p "${SCRIPT_DIR}/routes"
 echo "🤖 ==================================================="
 echo "🤖 INICIANDO TEACH EN ROBOT ${ROBOT_ID} (Namespace: ${NS})"
 echo "🤖 MODO: ${MODE}"
-echo "🤖 Guardando ruta en: routes/lab_route.json"
+echo "🤖 Guardando ruta en: ${ROUTE_FILE}"
 echo "🤖 ==================================================="
 
 ros2 run tp1_teach_repeat localization --ros-args \
   -p stage:=teach \
   -p mode:="${MODE}" \
   -p use_sim_time:=false \
-  -p route_file:="${SCRIPT_DIR}/routes/lab_route.json" \
+  -p route_file:="${ROUTE_FILE}" \
   -p overwrite:=true \
   --params-file "${SCRIPT_DIR}/params_tb4.yaml" \
   -r /scan:="${NS}/scan" \

@@ -3,6 +3,15 @@ set -e
 
 MODE="${1:-mixed}"
 ROBOT_ID="${ROBOT_ID:-2}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ -n "$2" ]; then
+  ROUTE_FILE="$2"
+elif [ -f "${SCRIPT_DIR}/routes/lab_route_${MODE}.json" ]; then
+  ROUTE_FILE="${SCRIPT_DIR}/routes/lab_route_${MODE}.json"
+else
+  ROUTE_FILE="${SCRIPT_DIR}/routes/lab_route.json"
+fi
 
 if [ "$ROBOT_ID" == "2" ]; then
   TARGET_IP="172.23.16.88"
@@ -20,10 +29,9 @@ export ROS_SUPER_CLIENT=True
 export ROS_DOMAIN_ID=$DOMAIN_ID
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS_DIR="${SCRIPT_DIR}/ros_ws"
 
-source /opt/ros/humble/setup.bash
+source /opt/ros/humble/setup.bash 2>/dev/null || true
 if [ -f "${WS_DIR}/install/setup.bash" ]; then
   source "${WS_DIR}/install/setup.bash"
 fi
@@ -31,13 +39,13 @@ fi
 echo "🤖 ==================================================="
 echo "🤖 INICIANDO REPEAT EN ROBOT ${ROBOT_ID} (Namespace: ${NS})"
 echo "🤖 MODO SELECCIONADO: ${MODE}"
-echo "🤖 Leyendo ruta de: routes/lab_route.json"
+echo "🤖 Leyendo ruta de: ${ROUTE_FILE}"
 echo "🤖 ==================================================="
 
 ros2 launch tp1_teach_repeat repeat.launch.py \
   use_sim_time:=false \
   mode:="${MODE}" \
-  route_file:="${SCRIPT_DIR}/routes/lab_route.json" \
+  route_file:="${ROUTE_FILE}" \
   publish_stamped:=false \
   params_file:="${SCRIPT_DIR}/params_tb4.yaml" \
   scan_topic:="${NS}/scan" \
