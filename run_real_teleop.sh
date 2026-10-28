@@ -14,4 +14,4 @@ echo "🎮 TELEOPERACION ROBOT 2 (/tb4_2/cmd_vel)"
 echo "🎮 Controles: i (avanzar), j (girar izq), l (girar der), k (frenar)"
 echo "🎮 ==================================================="
 
-ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/tb4_2/cmd_vel
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p speed:=0.15 -p turn:=0.5 -r cmd_vel:=/tb4_2/cmd_vel
