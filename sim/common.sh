@@ -3,7 +3,10 @@
 SIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SIM_DIR}/.." && pwd)"
 cd "${REPO_DIR}"
-eval "$(pixi shell-hook --frozen)"
+# Ejecutar dentro del entorno de pixi (relanza el script con `pixi run` si hace falta).
+if [ -z "${PIXI_PROJECT_ROOT:-}" ]; then
+  exec pixi run --frozen bash "${SIM_DIR}/$(basename "$0")" "$@"
+fi
 
 # Pose inicial del robot en Gazebo (la misma para Teach y Repeat).
 START_X="${START_X:--2.0}"
