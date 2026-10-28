@@ -42,6 +42,7 @@ ros2 launch tp1_teach_repeat repeat.launch.py \
   params_file:="${SCRIPT_DIR}/params_tb4.yaml" \
   scan_topic:="${NS}/scan" \
   joint_states_topic:="${NS}/joint_states" \
+  odom_topic:="${NS}/odom" \
   cmd_vel_topic:="${NS}/cmd_vel" \
   tf_topic:="${NS}/tf" \
   tf_static_topic:="${NS}/tf_static" \

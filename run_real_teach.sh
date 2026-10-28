@@ -45,6 +45,7 @@ ros2 run tp1_teach_repeat localization --ros-args \
   --params-file "${SCRIPT_DIR}/params_tb4.yaml" \
   -r /scan:="${NS}/scan" \
   -r /joint_states:="${NS}/joint_states" \
+  -r /odom:="${NS}/odom" \
   -r /cmd_vel:="${NS}/cmd_vel" \
   -r /tf:="${NS}/tf" \
   -r /tf_static:="${NS}/tf_static"

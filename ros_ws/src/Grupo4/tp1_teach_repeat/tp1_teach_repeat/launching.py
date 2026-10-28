@@ -14,7 +14,7 @@ def stage_launch(stage):
     defaults = dict(mode='mixed', use_sim_time='true', route_file='routes/route.json',
                     overwrite='false', rviz='false', publish_stamped='true',
                     initial_x='0.0', initial_y='0.0', initial_yaw='0.0',
-                    scan_topic='/scan', joint_states_topic='/joint_states', cmd_vel_topic='/cmd_vel',
+                    scan_topic='/scan', joint_states_topic='/joint_states', odom_topic='/odom', cmd_vel_topic='/cmd_vel',
                     tf_topic='/tf', tf_static_topic='/tf_static',
                     params_file=os.path.join(share, 'config', 'params.yaml'))
     args = [DeclareLaunchArgument(k, default_value=v) for k, v in defaults.items()]
@@ -25,6 +25,7 @@ def stage_launch(stage):
     remaps = [
         ('/scan', LaunchConfiguration('scan_topic')),
         ('/joint_states', LaunchConfiguration('joint_states_topic')),
+        ('/odom', LaunchConfiguration('odom_topic')),
         ('/cmd_vel', LaunchConfiguration('cmd_vel_topic')),
         ('/tf', LaunchConfiguration('tf_topic')),
         ('/tf_static', LaunchConfiguration('tf_static_topic')),

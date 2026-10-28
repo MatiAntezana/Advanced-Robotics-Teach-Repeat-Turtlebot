@@ -129,8 +129,10 @@ class Localization(Node):
         self.pub_walls = self.create_publisher(MarkerArray, '/tnr/reference_walls', latched)
         self.pub_scan = self.create_publisher(PointCloud2, '/tnr/localized_scan', qos_profile_sensor_data)
         self.path = RosPath()
+        self.base_wheel_odom = None
         if self.mode != 'lidar':
             self.create_subscription(JointState, '/joint_states', self.on_joint, qos_profile_sensor_data)
+            self.create_subscription(Odometry, '/odom', self.on_wheel_odom, qos_profile_sensor_data)
         self.create_subscription(LaserScan, '/scan', self.on_scan, qos_profile_sensor_data)
         self.create_service(Trigger, '/tnr/save_route', self.on_save)
         self.create_timer(1.0, self.publish_visuals)
@@ -172,6 +174,32 @@ class Localization(Node):
             self.started_ns = t
         self.pose = compose(self.correction, self.wheel)
         # Un scan puede llegar antes del encoder que permite interpolarlo.
+        if self.pending_scan is not None and ns(self.pending_scan.header.stamp) <= t:
+            scan, self.pending_scan = self.pending_scan, None
+            self.on_scan(scan)
+            self.pose = compose(self.correction, self.wheel)
+        if self.stage == 'teach' and (t-self.started_ns)*1e-9 > self.p['scan_timeout']:
+            if self.last_scan_ns is None or (t-self.last_scan_ns)*1e-9 > self.p['scan_timeout']:
+                self.record(self.pose, msg.header.stamp)
+        self.publish(self.pose, msg.header.stamp, velocity)
+
+    def on_wheel_odom(self, msg):
+        if self.last_joint is not None:
+            return
+        t = ns(msg.header.stamp)
+        p = msg.pose.pose.position
+        w = yaw(msg.pose.pose.orientation)
+        current = np.array([p.x, p.y, w])
+        if self.base_wheel_odom is None:
+            self.base_wheel_odom = current.copy()
+        rel_wheel = between(self.base_wheel_odom, current)
+        self.wheel = rel_wheel
+        velocity = (msg.twist.twist.linear.x, msg.twist.twist.angular.z)
+        self.measurement_stamp = msg.header.stamp
+        self.history.append((t, self.wheel.copy()))
+        if self.started_ns is None:
+            self.started_ns = t
+        self.pose = compose(self.correction, self.wheel)
         if self.pending_scan is not None and ns(self.pending_scan.header.stamp) <= t:
             scan, self.pending_scan = self.pending_scan, None
             self.on_scan(scan)
