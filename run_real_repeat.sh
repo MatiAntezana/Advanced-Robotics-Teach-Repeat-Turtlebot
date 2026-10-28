@@ -2,7 +2,7 @@
 set -e
 
 MODE="${1:-mixed}"
-ROBOT_ID="${ROBOT_ID:-1}"
+ROBOT_ID="${ROBOT_ID:-2}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -n "$2" ]; then
