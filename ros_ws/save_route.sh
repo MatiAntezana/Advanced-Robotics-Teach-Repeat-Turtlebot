@@ -1,3 +1,4 @@
 #!/bin/bash
-turtlebot_mode 2
+ROBOT_ID="${ROBOT_ID:-1}"
+turtlebot_mode "$ROBOT_ID"
 ros2 service call /tnr/save_route std_srvs/srv/Trigger '{}'

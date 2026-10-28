@@ -118,7 +118,7 @@ def polar_command(error, position_tolerance=0.035, yaw_tolerance=0.06,
         alpha = wrap(alpha - math.copysign(math.pi, alpha))
     beta = wrap(yaw - alpha)
     v = direction*min(max_v, k_rho*rho)*max(0., math.cos(alpha))
-    if abs(alpha) > 0.65:
+    if abs(alpha) > 0.85:
         v = 0.
     w = float(np.clip(k_alpha*alpha + k_beta*beta, -max_w, max_w))
     return v, w

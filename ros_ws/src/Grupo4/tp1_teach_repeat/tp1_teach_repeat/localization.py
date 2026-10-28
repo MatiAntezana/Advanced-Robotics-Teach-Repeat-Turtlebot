@@ -340,8 +340,11 @@ class Localization(Node):
         if self.stage == 'repeat':
             target_index = min(self.index + 1, len(self.frames)-1)
             error = between(pose, self.frames[target_index]['pose'])
-            if np.linalg.norm(error[:2]) <= self.p['position_tolerance'] and abs(error[2]) <= self.p['yaw_tolerance']:
-                if target_index == len(self.frames)-1:
+            is_final = (target_index == len(self.frames)-1)
+            pos_tol = self.p['position_tolerance'] if is_final else max(self.p['position_tolerance']*2.0, 0.08)
+            yaw_tol = self.p['yaw_tolerance'] if is_final else math.pi
+            if np.linalg.norm(error[:2]) <= pos_tol and abs(error[2]) <= yaw_tol:
+                if is_final:
                     if not self.done:
                         self.get_logger().info('REPEAT COMPLETADO')
                     self.index = target_index
