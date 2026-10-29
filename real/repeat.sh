@@ -5,6 +5,7 @@
 # Poner RVIZ=true para abrir RViz desde el launch. Ctrl+C cierra el bag.
 set -e
 MODE="${1:-lidar}"
+[ "$MODE" == "encoder" ] && MODE="encoders"
 ROBOT_ID="${2:-${ROBOT_ID:-2}}"
 CIRCUIT="${3:-${CIRCUIT:-circuito-2}}"
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"

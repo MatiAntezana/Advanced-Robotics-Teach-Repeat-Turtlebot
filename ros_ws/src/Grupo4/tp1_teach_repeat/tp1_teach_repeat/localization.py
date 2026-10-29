@@ -68,6 +68,8 @@ class Localization(Node):
                         scan_timeout=0.8, teach_submap_keyframes=3, publish_rate=50.0,
                         map_resolution=.04, keyframe_label_stride=3)
         self.p = {k: self.declare_parameter(k, v).value for k, v in defaults.items()}
+        if self.p['mode'] == 'encoder':
+            self.p['mode'] = 'encoders'
         self.mode, self.stage = self.p['mode'], self.p['stage']
         if self.mode not in ('encoders', 'lidar', 'mixed') or self.stage not in ('teach', 'repeat'):
             raise ValueError('stage: teach/repeat; mode: encoders/lidar/mixed')
