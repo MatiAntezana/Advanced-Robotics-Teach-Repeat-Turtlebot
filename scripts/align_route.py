@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Alinea una ruta rotándola para que las paredes queden perfectamente ortogonales a la grilla."""
+"""Rota las poses y la trayectoria de una ruta guardada."""
 import json
 import math
 import sys
@@ -8,10 +8,12 @@ import numpy as np
 
 
 def wrap(a):
+    """Normaliza un angulo en el intervalo [-pi, pi]."""
     return (a + math.pi) % (2 * math.pi) - math.pi
 
 
 def align_route(input_path, output_path, angle_deg=7.20):
+    """Aplica una rotacion 2D a los keyframes y trayectoria de la ruta."""
     with open(input_path, 'r') as f:
         data = json.load(f)
 
@@ -36,7 +38,7 @@ def align_route(input_path, output_path, angle_deg=7.20):
 
     with open(output_path, 'w') as f:
         json.dump(data, f)
-    print(f"Ruta rotada por {angle_deg:+.2f}° guardada exitosamente en {output_path}")
+    print(f"Ruta rotada guardada en {output_path}")
 
 
 if __name__ == '__main__':

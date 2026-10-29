@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Compara registros reales sin mezclar fuentes de odometría ni asumir éxito.
-
-Desde la raíz: pixi run --frozen python scripts/plot_real_comparison.py
-Lee SQLite en modo solo lectura. Requiere el entorno ROS del proyecto.
-"""
+"""Genera graficas comparativas de los ensayos con el robot real en el laboratorio."""
 import argparse
 import csv
 import hashlib
@@ -29,6 +25,7 @@ TYPES = {'/tnr/odom': Odometry, '/tnr/setpoint': PoseStamped,
 
 
 def read_bag(folder):
+    """Lee los mensajes requeridos de los archivos SQLite del rosbag."""
     result = {k: [] for k in TYPES}
     paths = sorted(folder.glob('*.db3'))
     if not paths:
@@ -46,7 +43,7 @@ def read_bag(folder):
 
 
 def path_distance(points, reference):
-    """Distancia mínima a segmentos Teach, sin correspondencia temporal."""
+    """Calcula la distancia ortogonal minima de los puntos a la referencia."""
     a, delta = reference[:-1], np.diff(reference, axis=0)
     norm = np.maximum(np.sum(delta * delta, axis=1), 1e-24)
     out = []
@@ -57,6 +54,7 @@ def path_distance(points, reference):
 
 
 def load_mode(mode, max_duration=None):
+    """Carga los datos de trayectoria, odometria y metricas de un modo."""
     route_path = ROOT / 'routes' / f'lab_route_{mode}.json'
     route = json.loads(route_path.read_text())
     if route['mode'] != mode or route['frame'] != 'odom':
@@ -68,8 +66,6 @@ def load_mode(mode, max_duration=None):
     t0 = status[0][0]
     done = [t for t, m in bag['/tnr/done'] if m.data and t >= t0]
     end = done[0] if done else status[-1][0]
-    # Bool se publica justo antes del String de la misma actualización.
-    # Incluye ese status final para conservar el índice de la meta.
     if done:
         final_status = next((t for t, s in status if t >= done[0] and s.endswith('done=True')), None)
         if final_status is None or final_status-done[0] > 500_000_000:
@@ -86,8 +82,6 @@ def load_mode(mode, max_duration=None):
         raise ValueError(f'Odometría insuficiente: {mode}')
     xy = np.array([[m.pose.pose.position.x, m.pose.pose.position.y] for _, m in odom])
     times = np.array([t for t, _ in odom])
-    # trajectory contiene [stamp_ns,x,y,yaw]; usa el Teach guardado, no el bag
-    # de odometría del fabricante, cuyo origen y estimador son distintos.
     teach = np.asarray(route['trajectory'], dtype=float)[:, 1:3]
     kfs = np.array([k['pose'] for k in route['keyframes']])
     cross = path_distance(xy, teach)
@@ -95,10 +89,10 @@ def load_mode(mode, max_duration=None):
              for t, s in status if t <= end]
     if any(i >= len(kfs) for _, i in state):
         raise ValueError('Índice de referencia fuera de la ruta')
-    # Verifica asociación bag/ruta mediante el objetivo global reconstruido.
-    # Odom y setpoint de una publicación comparten sello de medición.
+
     def stamp(m):
         return m.header.stamp.sec * 10**9 + m.header.stamp.nanosec
+
     by_stamp = {stamp(m): m for _, m in bag['/tnr/odom']}
     mismatch = []
     for _, goal in window('/tnr/setpoint'):
@@ -108,7 +102,6 @@ def load_mode(mode, max_duration=None):
         p, q = o.pose.pose.position, o.pose.pose.orientation
         yaw = np.arctan2(2*(q.w*q.z+q.x*q.y), 1-2*(q.y*q.y+q.z*q.z))
         v = goal.pose.position
-        # done publica objetivo nulo, que no define un keyframe guardado.
         if np.hypot(v.x, v.y) < 1e-10:
             continue
         target = [p.x+np.cos(yaw)*v.x-np.sin(yaw)*v.y,
@@ -119,17 +112,17 @@ def load_mode(mode, max_duration=None):
     align = [(t, json.loads(m.data)) for t, m in window('/tnr/alignment')]
     last_index = state[-1][1]
     summary = dict(mode=mode, completed_in_recording=bool(done),
-                   completed_in_window=bool(done and done[0] <= end),
-                   observed_window_s=(end-t0)/1e9,
-                   completion_time_s=(done[0]-t0)/1e9 if done else None,
-                   last_reference_index=last_index, final_reference_index=len(kfs)-1,
-                   reference_index_percent=100*last_index/(len(kfs)-1),
-                   teach_polyline_length_m=float(np.linalg.norm(np.diff(teach, axis=0), axis=1).sum()),
-                   observed_cross_track_rms_m=float(np.sqrt(np.trapezoid(cross**2, times)/(times[-1]-times[0]))),
-                   observed_cross_track_max_m=float(cross.max()),
-                   route_match_p95_m=float(np.percentile(mismatch, 95)),
-                   first_status_receipt_ns=t0, analysis_end_receipt_ns=end,
-                   independent_ground_truth=False)
+                    completed_in_window=bool(done and done[0] <= end),
+                    observed_window_s=(end-t0)/1e9,
+                    completion_time_s=(done[0]-t0)/1e9 if done else None,
+                    last_reference_index=last_index, final_reference_index=len(kfs)-1,
+                    reference_index_percent=100*last_index/(len(kfs)-1),
+                    teach_polyline_length_m=float(np.linalg.norm(np.diff(teach, axis=0), axis=1).sum()),
+                    observed_cross_track_rms_m=float(np.sqrt(np.trapezoid(cross**2, times)/(times[-1]-times[0]))),
+                    observed_cross_track_max_m=float(cross.max()),
+                    route_match_p95_m=float(np.percentile(mismatch, 95)),
+                    first_status_receipt_ns=t0, analysis_end_receipt_ns=end,
+                    independent_ground_truth=False)
     clouds = []
     for k in route['keyframes']:
         pts = np.asarray(k.get('points', []))
@@ -149,7 +142,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT/'validation'/'real_comparison')
     parser.add_argument('--common-window', action='store_true',
-                        help='Recortar los tres Repeat a la menor duración observada y encuadrar ese tramo')
+                        help='Ajusta la comparacion a la duracion comun menor')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     results = [load_mode(mode) for mode, _, _ in MODES]
@@ -169,34 +162,32 @@ def main():
                          'grid.color': '#dce3e9', 'grid.alpha': .75})
     fig = plt.figure(figsize=(18, 9 if common is not None else 11), facecolor='white')
     grid = fig.add_gridspec(2, 3, left=.055, right=.975,
-                           bottom=.10,
-                           top=.84,
-                           height_ratios=[1 if common is not None else 1.55, 1],
-                           wspace=.26, hspace=.55 if common is not None else .4)
+                            bottom=.10, top=.84,
+                            height_ratios=[1 if common is not None else 1.55, 1],
+                            wspace=.26, hspace=.55 if common is not None else .4)
     all_xy = np.vstack([r[k][:, :2] for r in results for k in ['shown_teach', 'xy', 'shown_kfs']])
     lo, hi = all_xy.min(axis=0)-.45, all_xy.max(axis=0)+.45
-    # Una misma escala métrica para los tres mapas. No se alinea cada Repeat
-    # a posteriori ni se recorta la trayectoria observada.
+
     for col, ((mode, name, color), r) in enumerate(zip(MODES, results)):
         ax = fig.add_subplot(grid[0, col])
         cloud = r['cloud']
         if len(cloud):
             cloud = cloud[::max(1, len(cloud)//12000)]
             ax.scatter(*cloud.T, s=1, c='#bfc7ce', alpha=.35, rasterized=True)
-        ax.plot(*r['shown_teach'].T, '--', color='#596774', lw=1.7, label='Teach del tramo')
-        ax.plot(*r['xy'].T, color=color, lw=2.4, label='Repeat estimado')
+        ax.plot(*r['shown_teach'].T, '--', color='#596774', lw=1.7, label='Teach')
+        ax.plot(*r['xy'].T, color=color, lw=2.4, label='Repeat')
         ax.scatter(*r['shown_kfs'][:, :2].T, s=6, color='#596774', alpha=.5)
         ax.scatter(*r['xy'][0], marker='o', s=45, facecolor='white', edgecolor=color, zorder=5)
-        ax.scatter(*r['xy'][-1], marker='X', s=80, color=color, zorder=5, label='Fin del segmento analizado')
+        ax.scatter(*r['xy'][-1], marker='X', s=80, color=color, zorder=5, label='Fin')
         if common is None:
-            ax.scatter(*r['kfs'][-1, :2], marker='*', s=130, color='#142b40', zorder=5, label='Meta Teach')
+            ax.scatter(*r['kfs'][-1, :2], marker='*', s=130, color='#142b40', zorder=5, label='Meta')
         s = r['summary']
-        state = 'COMPLETADO' if s['completed_in_recording'] else 'REGISTRO PARCIAL · sin done=True'
+        state = 'COMPLETADO' if s['completed_in_recording'] else 'PARCIAL'
         if common is not None:
-            state = f'PRIMEROS {common:.1f} s DE REPEAT'
+            state = f'{common:.1f} s'
         ax.set_title(name if common is not None else f'{name}\n{state}',
                      fontsize=13, color=color, pad=17)
-        ax.set(xlim=(lo[0], hi[0]), ylim=(lo[1], hi[1]), xlabel='x local [m]', ylabel='y local [m]')
+        ax.set(xlim=(lo[0], hi[0]), ylim=(lo[1], hi[1]), xlabel='x [m]', ylabel='y [m]')
         ax.set_aspect('equal', adjustable='box')
         ax.grid(True, lw=.6)
         if col == 0:
@@ -206,6 +197,7 @@ def main():
                            ncol=3, fontsize=10, frameon=False)
             else:
                 ax.legend(loc='upper left', fontsize=8, framealpha=.94)
+
     axes = [fig.add_subplot(grid[1, col]) for col in range(3)]
     for (_, name, color), r in zip(MODES, results):
         axes[0].plot(r['times'], r['cross']*100, color=color, lw=1.7, label=name)
@@ -213,21 +205,19 @@ def main():
         axes[1].step(r['state'][:, 0], 100*r['state'][:, 1]/n, where='post', color=color, lw=2, label=name)
         a = r['align']
         axes[2].plot([t for t, _ in a], [v['rmse_m']*100 for _, v in a], color=color, lw=1.5, label=name)
-    axes[0].set(title='Distancia geométrica a Teach', ylabel='Distancia a la polilínea [cm]')
-    axes[1].set(title='Avance por referencias', ylabel='Índice / índice final [%]', ylim=(-3, 104))
+    axes[0].set(title='Distancia a Teach', ylabel='Error [cm]')
+    axes[1].set(title='Progreso de referencias', ylabel='Completado [%]', ylim=(-3, 104))
     if common is not None:
         axes[1].set_ylim(-1, max(r['summary']['reference_index_percent'] for r in results)+3)
-    axes[2].set(title='Alineación escaneo–referencia', ylabel='RMSE publicado [cm]')
+    axes[2].set(title='Alineación ICP', ylabel='RMSE [cm]')
     for ax in axes:
-        ax.set_xlabel('Tiempo desde primer status Repeat [s]')
+        ax.set_xlabel('Tiempo [s]')
         ax.grid(True, lw=.6)
         ax.legend(fontsize=9, loc='upper right')
         if common is not None:
             ax.set_xlim(0, common)
-    fig.suptitle('Comparación de los 3 métodos (laboratorio)',
-                 x=.5, y=.975, ha='center', fontsize=23, fontweight='bold')
-    # Las trayectorias superiores quedan limpias; las métricas inferiores
-    # conservan ejes, unidades y valores para poder interpretarlas.
+    fig.suptitle('Comparativa de Métodos en Laboratorio',
+                 x=.5, y=.975, ha='center', fontsize=20, fontweight='bold')
     for ax in fig.axes[:3]:
         ax.set_xlabel('')
         ax.set_ylabel('')
@@ -237,6 +227,7 @@ def main():
             spine.set_visible(False)
     fig.savefig(args.output/'comparacion_robot_real.png', dpi=190)
     plt.close(fig)
+
     summaries = [r['summary'] for r in results]
     with (args.output/'metricas.csv').open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=list(summaries[0]))
@@ -253,7 +244,7 @@ def main():
         {'metrics': summaries, 'sources': provenance}, indent=2)+'\n')
     for s in summaries:
         print(json.dumps(s, ensure_ascii=False))
-    print(f'Gráficos y métricas: {args.output.resolve()}')
+    print(f'Graficos guardados en {args.output.resolve()}')
 
 
 if __name__ == '__main__':

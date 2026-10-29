@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-"""Prueba end-to-end sobre Gazebo YA iniciado. Publica movimiento: solo simulación.
-
-Imprime cada comando, enseña una ruta corta, guarda, reposiciona burger y repite.
-No publica sensores sintéticos ni usa odometría del simulador para localizar.
-"""
+"""Ejecuta una prueba automatizada de Teach y Repeat en Gazebo."""
 import argparse
 import json
-import math
 import os
 from pathlib import Path
 import shlex
@@ -30,11 +25,13 @@ from tp1_teach_repeat.localization import yaw
 
 
 def command(args):
+    """Ejecuta un comando del sistema y captura su salida."""
     print('$ ' + shlex.join(args), flush=True)
     return subprocess.run(args, check=True, text=True, capture_output=True, timeout=20)
 
 
 def start(stage, mode, route):
+    """Lanza el archivo launch correspondiente en un proceso independiente."""
     args = ['ros2', 'launch', 'tp1_teach_repeat', stage+'.launch.py',
             'mode:='+mode, 'route_file:='+str(route), 'overwrite:=true']
     print('$ ' + shlex.join(args), flush=True)
@@ -42,6 +39,7 @@ def start(stage, mode, route):
 
 
 def stop(process):
+    """Detiene limpiamente un proceso mediante SIGINT y SIGTERM."""
     if process is not None and process.poll() is None:
         os.killpg(process.pid, signal.SIGINT)
         try:
@@ -52,6 +50,8 @@ def stop(process):
 
 
 class Probe(Node):
+    """Nodo para monitorear topicos, transformadas y comandar teleoperacion."""
+
     def __init__(self):
         super().__init__('tp1_gazebo_validation', parameter_overrides=[Parameter('use_sim_time', value=True)])
         self.pub = self.create_publisher(TwistStamped, '/cmd_vel', 10)
@@ -117,7 +117,6 @@ class Probe(Node):
         self.pub.publish(msg)
 
     def drive(self, seconds, v=0., w=0.):
-        print(f'Teleoperación de prueba: {seconds}s simulados, v={v}, w={w}', flush=True)
         begin = self.get_clock().now().nanoseconds
         wall_end = time.monotonic()+max(30, seconds*10)
         while (self.get_clock().now().nanoseconds-begin)*1e-9 < seconds:
@@ -158,9 +157,9 @@ def main():
     results = []
     try:
         node.wait(lambda: node.scans >= 3 and node.joints >= 3, 45, 'sensores de Gazebo')
-        print(f'Sensores recibidos: {node.scans} scans, {node.joints} joint_states', flush=True)
+        print(f'Sensores: {node.scans} scans, {node.joints} joint_states', flush=True)
         for mode in args.modes:
-            print(f'\n===== VALIDACIÓN GAZEBO: {mode} =====', flush=True)
+            print(f'\nValidando {mode}...', flush=True)
             node.reset_robot()
             route = output / f'{mode}_route.json'
             previous_mtime = route.stat().st_mtime_ns if route.exists() else None
@@ -210,7 +209,7 @@ def main():
             results.append(result)
             (output/f'{mode}_trajectories.json').write_text(json.dumps(dict(teach=teach, repeat=repeat)))
             (output/'results.json').write_text(json.dumps(results, indent=2))
-            print('RESULTADO: '+json.dumps(result), flush=True)
+            print('Resultado: '+json.dumps(result), flush=True)
             stop(process)
             process = None
             node.drive(.5)

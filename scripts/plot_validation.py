@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grafica las trayectorias estimadas guardadas por validate_gazebo.py."""
+"""Grafica las trayectorias de validacion guardadas por validate_gazebo.py."""
 import argparse
 import json
 from pathlib import Path
@@ -28,17 +28,17 @@ def main():
         ax.scatter(keyframes[:, 0], keyframes[:, 1], color='#313e4b', s=25, label='Keyframes', zorder=3)
         for i, (x, y, _) in enumerate(keyframes):
             ax.annotate(str(i), (x, y), xytext=(4, 5 + 11*(i % 2)), textcoords='offset points', fontsize=8)
-        ax.set_title(f"{mode}\nError final estimado: {result['final_position_error_m']*100:.1f} cm")
-        ax.set_xlabel('x en odom [m]')
-        ax.set_ylabel('y en odom [m]')
+        ax.set_title(f"{mode}\nError final: {result['final_position_error_m']*100:.1f} cm")
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('y [m]')
         ax.set_aspect('equal', adjustable='datalim')
         ax.grid(alpha=.2)
         ax.legend(loc='upper left', fontsize=8)
-    fig.suptitle('Teach y Repeat en Gazebo · localización estimada, sin ground truth')
+    fig.suptitle('Validacion Teach y Repeat en Gazebo', fontsize=12, fontweight='bold')
     fig.tight_layout()
     target = folder/'trajectories.png'
     fig.savefig(target, dpi=180)
-    print(target.absolute())
+    print(f"Grafico guardado en {target.absolute()}")
 
 
 if __name__ == '__main__':

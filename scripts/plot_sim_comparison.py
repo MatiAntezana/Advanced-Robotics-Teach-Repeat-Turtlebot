@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
-"""Genera graficas comparativas de simulacion para los tres modos de localizacion:
-Encoders, LiDAR 2D (ICP) y Mixto.
-
-Procesa los rosbags (.mcap) de repeat y las rutas JSON guardadas en Teach.
-Ejecucion:
-    pixi run python scripts/plot_sim_comparison.py
-"""
+"""Comparativa de trayectoria, error lateral y alineacion ICP en simulacion."""
 import argparse
 import json
-import re
 from pathlib import Path
 
 import matplotlib
@@ -41,7 +34,7 @@ TYPES = {
 
 
 def smooth_signal(y, window_len=31):
-    """Aplica un suavizado hanning con padding reflectante para evitar distorsion en bordes."""
+    """Aplica suavizado hanning con extension de bordes."""
     if len(y) < window_len:
         return y
     w = np.hanning(window_len)
@@ -84,6 +77,7 @@ def path_distance(points, reference):
 
 
 def load_mode_data(mode):
+    """Carga ruta de Teach y datos de Repeat grabados en rosbag."""
     route_file = ROOT / 'routes' / f'sim_route_{mode}.json'
     if not route_file.exists():
         raise FileNotFoundError(f'No se encontro ruta: {route_file}')
@@ -95,7 +89,6 @@ def load_mode_data(mode):
         raise FileNotFoundError(f'No se encontro rosbag: {bag_folder}')
     bag = read_sim_bag(bag_folder)
 
-    # Identificar ventana de ejecucion Repeat
     status_msgs = [(t, m.data) for t, m in bag['/tnr/status']]
     if not status_msgs:
         raise ValueError(f'No hay mensajes de /tnr/status en {mode}')
@@ -104,21 +97,16 @@ def load_mode_data(mode):
     done_msgs = [t for t, m in bag['/tnr/done'] if m.data and t >= t0]
     t_end = done_msgs[0] if done_msgs else status_msgs[-1][0]
 
-    # Odometria estimada Repeat
     odom = [(float((t - t0) / 1e9), m) for t, m in bag['/tnr/odom'] if t0 <= t <= t_end]
     if len(odom) < 2:
         raise ValueError(f'Insuficientes mensajes de odometria para {mode}')
     times = np.array([t for t, _ in odom])
     xy = np.array([[m.pose.pose.position.x, m.pose.pose.position.y] for _, m in odom])
 
-    # Trayectoria Teach guardada en JSON
     teach_traj = np.array(route['trajectory'], dtype=float)[:, 1:3]
     keyframes = np.array([k['pose'][:2] for k in route['keyframes']])
-
-    # Error lateral (Cross-Track Error) respecto al Teach
     cte = path_distance(xy, teach_traj)
 
-    # Metricas de alineacion LiDAR ICP si existen
     align_data = []
     for t, m in bag['/tnr/alignment']:
         if t0 <= t <= t_end:
@@ -148,30 +136,25 @@ def load_mode_data(mode):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Comparacion de los 3 modos de simulacion')
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', default='evidence/simulacion/comparativa_simulacion.png',
-                        help='Ruta de salida del grafico PNG')
+                        help='Ruta del grafico de salida')
     parser.add_argument('--summary', default='evidence/simulacion/metricas_simulacion.md',
-                        help='Ruta de salida del reporte Markdown')
+                        help='Ruta del resumen Markdown')
     args = parser.parse_args()
 
     results = {}
-    print('Cargando datos de los tres modos de simulacion...')
     for key, label, color in MODES:
-        print(f'Procesando {key}...')
         results[key] = load_mode_data(key)
 
-    # Crear figura con distribucion equilibrada de 3 paneles
     fig = plt.figure(figsize=(16, 7.8))
     gs = gridspec.GridSpec(2, 2, width_ratios=[1.15, 1.0], hspace=0.32, wspace=0.22)
 
-    # 1. Trayectorias en la simulación (Teach vs Repeat) - Panel Izquierdo Completo
     ax1 = fig.add_subplot(gs[:, 0])
     for key, label, color in MODES:
         d = results[key]
         ax1.plot(d['xy'][:, 0], d['xy'][:, 1], label=f'Repeat {label}', color=color, linewidth=2.0)
 
-    # Teach y Keyframes
     ref_d = results['mixed']
     ax1.plot(ref_d['teach_traj'][:, 0], ref_d['teach_traj'][:, 1], '--', color='#333333',
              linewidth=1.8, label='Ruta Teach (Referencia)', alpha=0.85)
@@ -189,7 +172,6 @@ def main():
     ax1.axis('equal')
     ax1.legend(loc='best', fontsize=8.5, framealpha=0.9)
 
-    # 2. Error Lateral (Cross-Track Error) vs Tiempo - Panel Superior Derecho
     ax2 = fig.add_subplot(gs[0, 1])
     for key, label, color in MODES:
         d = results[key]
@@ -204,7 +186,6 @@ def main():
     ax2.grid(True, linestyle=':', alpha=0.6)
     ax2.legend(loc='upper right', fontsize=8.5, framealpha=0.9)
 
-    # 3. Metricas ICP de Alineamiento (RMSE scan-to-keyframe) - Panel Inferior Derecho
     ax3 = fig.add_subplot(gs[1, 1])
     has_icp = False
     for key, label, color in [('lidar', 'LiDAR 2D (ICP)', '#8959b5'), ('mixed', 'Mixto (Fusión)', '#078875')]:
@@ -225,14 +206,11 @@ def main():
     else:
         ax3.text(0.5, 0.5, 'Sin datos de alineacion ICP', ha='center', va='center')
 
-    # Guardar imagen con bordes ajustados
     out_png = ROOT / args.output
     out_png.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_png, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f'Grafico guardado exitosamente en: {out_png}')
 
-    # Generar tabla resumen en Markdown
     out_md = ROOT / args.summary
     table_lines = [
         '# Metricas Comparativas de Simulacion (Gazebo Harmonic)',
@@ -251,7 +229,7 @@ def main():
     ]
     with open(out_md, 'w') as f:
         f.write('\n'.join(table_lines))
-    print(f'Reporte de metricas guardado en: {out_md}')
+    print(f'Grafico: {out_png}')
 
 
 if __name__ == '__main__':
