@@ -1,67 +1,68 @@
 # TP1 — Sistema Teach & Repeat para Robot Móvil Diferencial
 
-Sistema integral de Teach & Repeat (T&R) implementado en ROS 2 Jazzy para plataformas móviles de tracción diferencial. El sistema permite registrar una trayectoria guiada por un operador humano y reproducirla autónomamente utilizando odometría por encoders en ruedas, sensor LiDAR 2D con correspondencia geométrica ICP (Iterative Closest Point), o una fusión mixta de ambos sensores.
+Trabajo práctico de Robótica Avanzada, Grupo 4. Implementa Teach & Repeat en ROS 2: se enseña una ruta por teleoperación y luego el robot la repite de forma autónoma siguiendo referencias guardadas (keyframes).
 
-El proyecto está validado tanto en entorno simulado (Gazebo Harmonic con TurtleBot3 Burger) como en plataforma física de laboratorio (TurtleBot 4 con base iRobot Create 3 y FastDDS Discovery Server).
+La localización puede usar encoders, LiDAR 2D con ICP de Open3D o una combinación de ambos. Se probó en Gazebo Harmonic con TurtleBot3 Burger y en el laboratorio con TurtleBot 4, base iRobot Create 3.
 
-> **Alineación con la Consigna (TP1.pdf — Calificación sobre 10 puntos):**
-> - **Sistema T&R con Localización por Encoders:** 4 puntos.
-> - **Sistema T&R con Localización por LiDAR 2D (ICP):** 4 puntos.
-> - **Sistema T&R con Localización Mixta (Fusión predictiva):** 2 puntos.
+La [consigna](TP1.pdf) asigna 4 puntos al modo encoders, 4 a LiDAR y 2 al mixto.
 
----
+## Instalación y compilación
 
-## 1. Requisitos, Compilación y Entorno de Ejecución
+El entorno usa [Pixi](https://pixi.sh/) y RoboStack, con ROS 2 Jazzy y Python 3.12 en macOS Apple Silicon (`osx-arm64`).
 
-El proyecto gestiona dependencias, toolchain de compilación y entornos aislados mediante [Pixi](https://pixi.sh/) utilizando el canal RoboStack para **ROS 2 Jazzy** y **Python 3.12** sobre macOS (Apple Silicon `osx-arm64`).
+### Entorno
 
-### 1.1 Sincronización del Entorno
-Desde la raíz del repositorio (`Advance-Robotics-tp1`), el entorno y su archivo de bloqueo (`pixi.lock`) se sincronizan ejecutando:
+Desde la raíz del repositorio (`Advanced-Robotics-tp1`):
 
 ```bash
 pixi install --frozen
 ```
-*(El modificador `--frozen` asegura la instalación idéntica de las versiones verificadas sin resolver dependencias nuevamente).*
 
-### 1.2 Compilación del Paquete ROS 2
+`--frozen` usa las versiones fijadas en `pixi.lock`.
+
+### Compilar
+
 Para compilar el espacio de trabajo local:
 
 ```bash
 pixi run --frozen build
 ```
 
-> [!IMPORTANT]
-> **Política de Compilación:** La tarea `build` ejecuta internamente `colcon build` sin el modificador `--symlink-install` para prevenir enlaces simbólicos rotos inherentes a entornos virtuales conda/Pixi en macOS. Por lo tanto, `colcon` copia físicamente los módulos Python, archivos launch y configuraciones en `ros_ws/install/`. **Cualquier cambio en el código fuente (`tp1_teach_repeat/`), archivos de lanzamiento (`launch/`) o parámetros (`config/params.yaml`) requiere ejecutar nuevamente `pixi run --frozen build`** para impactar en las ejecuciones.
+La tarea ejecuta `colcon build` sin `--symlink-install` y copia los archivos a `ros_ws/install/`. Después de cambiar código, archivos launch o parámetros, hay que volver a compilar para que se apliquen los cambios.
 
-### 1.3 Verificación de Integridad (Suite de 26 Tests)
-Para ejecutar la batería completa de pruebas unitarias y de integración:
+### Pruebas
+
+Para ejecutar las pruebas:
 
 ```bash
 pixi run --frozen test
 ```
 
-La suite corre aislada en `ROS_DOMAIN_ID=43` para prevenir interferencias con robots físicos o simulaciones activas en la red local. Los **26 tests** verifican formalmente:
-1. **Cinemática Diferencial y Geometría $SE(2)$ (`test_core.py` — 7 tests):** Modelo de movimiento diferencial por arcos circulares (`wheel_step`), álgebra de transformaciones (`compose`, `between`, `inverse`), compensación por interpolación temporal de lecturas LiDAR demoradas, correspondencia Scan-to-Reference Open3D ICP y convergencia asintótica del controlador polar de Lyapunov $(\rho, \alpha, \beta)$ en diferentes cuadrantes, junto con la persistencia y validación de integridad de rutas (`.json`).
-2. **Mapeo y Grilla de Consenso (`test_mapping.py` — 2 tests):** Generación de grillas de ocupación por consenso espacial de múltiples escaneos (`reference_grid`), preservación de obstáculos consistentes y filtrado de ruido espurio.
-3. **Comportamiento de Nodos y Fusión Multimodal (`test_nodes.py` — 11 tests):** Aislamiento estricto de suscripciones según modo de localización (`encoders`, `lidar`, `mixed`), recuperación ante pérdida momentánea de láser, consistencia del árbol `/tf` con estampas temporales sincronizadas en Repeat, rechazo de trayectorias estáticas, frecuencia de publicación a 50 Hz sin pérdida de pasos de odometría, reducción de deriva acumulada mediante submapas locales de keyframes (`teach_submap_keyframes = 3`), y watchdogs de frenado seguro en el controlador ante mensajes obsoletos o referencias incorrectas.
-4. **Manejo de Procesos y Concurrencia (`test_runtime.py` — 2 tests):** Mecanismo de exclusión mutua mediante cerrojo de archivo (`simulation.lock`) para prevenir instancias duplicadas de Gazebo, y captura limpia de `SIGINT` (Ctrl+C) que detiene el executor antes de la desconexión del contexto ROS.
-5. **Visualización y Diagnóstico en RViz (`test_visualization.py` — 4 tests):** Progresión de estados de etiquetas de keyframes (`ACTIVO`, `SIGUIENTE`, `FINAL`), trazado del vector instantáneo de persecución en marco `odom`, cálculo en tiempo real de métricas de correspondencia ICP (RMSE residual y solapamiento), y publicación de nubes de puntos con timestamps exactos del sensor.
+Las pruebas usan `ROS_DOMAIN_ID=43` para no interferir con los robots o las simulaciones en ejecución. Los 26 casos se distribuyen así:
 
----
+| Archivo | Casos | Qué comprueba |
+|---|---:|---|
+| `test_core.py` | 7 | Cinemática diferencial, transformaciones SE(2), interpolación temporal, ICP, control polar y guardado de rutas. |
+| `test_mapping.py` | 2 | Grilla de consenso y filtrado de puntos aislados. |
+| `test_nodes.py` | 11 | Fuentes de localización, recuperación del láser, timestamps TF, publicación a 50 Hz, submapas y frenado ante mensajes obsoletos. |
+| `test_runtime.py` | 2 | Exclusión de instancias duplicadas de Gazebo y cierre con Ctrl+C. |
+| `test_visualization.py` | 4 | Etiquetas de keyframes, setpoint, métricas de alineación y timestamps de las nubes. |
 
-### 1.4 Parámetros Configurables del Sistema
+### Parámetros
 
-El comportamiento de los nodos está desacoplado mediante dos perfiles de configuración YAML:
-- **Simulación (`ros_ws/src/Grupo4/tp1_teach_repeat/config/params.yaml`):** Calibrado para la dinámica del TurtleBot3 Burger en Gazebo Harmonic.
-- **Laboratorio Real (`params_tb4.yaml`):** Ajustado a las dimensiones, articulaciones y límites de tracción del TurtleBot 4 (iRobot Create 3).
+Hay dos archivos de parámetros:
+
+- Simulación (`ros_ws/src/Grupo4/tp1_teach_repeat/config/params.yaml`): Calibrado para la dinámica del TurtleBot3 Burger en Gazebo Harmonic.
+
+- Laboratorio Real (`params_tb4.yaml`): Ajustado a las dimensiones, articulaciones y límites de tracción del TurtleBot 4 (iRobot Create 3).
 
 | Parámetro ROS | Archivo YAML | Valor Sim (TB3) | Valor Real (TB4) | Descripción |
 |---|---|:---:|:---:|---|
 | `wheel_radius` | Ambos | `0.033` m | `0.036` m | Radio efectivo de rueda motriz. |
 | `wheel_separation` | Ambos | `0.160` m | `0.233` m | Distancia entre ruedas (trocha cinemática). |
 | `left_joint` / `right_joint` | Ambos | `wheel_left_joint` / `wheel_right_joint` | `left_wheel_joint` / `right_wheel_joint` | Nombres de articulaciones suscritas en `/joint_states`. |
-| `keyframe_distance` | Ambos | `0.20` m | `0.20` m | **Umbral de traslación (Teach):** distancia mínima para registrar un nuevo keyframe. |
-| `keyframe_angle` | Ambos | `0.25` rad (~14.3°) | `0.25` rad (~14.3°) | **Umbral de rotación (Teach):** giro angular mínimo para registrar un nuevo keyframe. |
+| `keyframe_distance` | Ambos | `0.20` m | `0.20` m | Umbral de traslación (Teach): distancia mínima para registrar un nuevo keyframe. |
+| `keyframe_angle` | Ambos | `0.25` rad (~14.3°) | `0.25` rad (~14.3°) | Umbral de rotación (Teach): giro angular mínimo para registrar un nuevo keyframe. |
 | `teach_submap_keyframes`| Ambos | `3` | `3` | Tamaño de ventana de keyframes previos para alineación local de mapa (mitiga deriva scan-to-scan). |
 | `icp_distance` | Ambos | `0.25` m | `0.30` m | Distancia máxima de correspondencia de puntos en ICP. |
 | `icp_fitness` / `icp_rmse`| Ambos | `0.55` / `0.10` m | `0.50` / `0.12` m | Umbrales de solapamiento mínimo y RMSE residual aceptable para validar la pose ICP. |
@@ -70,195 +71,207 @@ El comportamiento de los nodos está desacoplado mediante dos perfiles de config
 | `max_v` / `max_w` | Ambos | `0.18` m/s / `1.0` rad/s | `0.22` m/s / `1.0` rad/s | Velocidad lineal y angular máximas del controlador polar. |
 | `k_rho`, `k_alpha`, `k_beta`, `k_yaw` | Ambos | `0.9`, `2.5`, `-0.6`, `1.5` | `1.2`, `2.2`, `-0.6`, `1.5` | Ganancias de control polar en lazo cerrado (estabilidad Lyapunov con $k_\rho > 0$, $k_\beta < 0$, $k_\alpha > k_\rho$). |
 
----
+## Modos de localización
 
-## 2. Modos de Localización
-
-El sistema implementa un estimador unificado de localización configurado mediante el argumento `mode`:
+El argumento `mode` selecciona la fuente de localización:
 
 | Modo | Argumento | Principio de Funcionamiento |
 |---|---|---|
-| **Encoders** | `mode:=encoders` | Integración odometría diferencial pura a partir de las lecturas de velocidad/posición de ruedas en `/joint_states`. Rápido y continuo, sujeto a deriva por deslizamiento acumulado en giros. |
-| **LiDAR 2D** | `mode:=lidar` | Localización geométrica basada puramente en nube de puntos láser (`/scan`) mediante correspondencia Scan-to-Scan e ICP Scan-to-Keyframe (Open3D). Inmune a deslizamiento de ruedas. |
-| **Mixto** | `mode:=mixed` | Fusión predictiva: utiliza odometría de encoders para predicción cinemática continua de alta frecuencia y corrige periódicamente la pose absoluta con cada escaneo LiDAR procesado por ICP. |
+| Encoders | `mode:=encoders` | Integración odometría diferencial pura a partir de las lecturas de velocidad/posición de ruedas en `/joint_states`. Rápido y continuo, sujeto a deriva por deslizamiento acumulado en giros. |
+| LiDAR 2D | `mode:=lidar` | Localización geométrica basada puramente en nube de puntos láser (`/scan`) mediante correspondencia Scan-to-Scan e ICP Scan-to-Keyframe (Open3D). Inmune a deslizamiento de ruedas. |
+| Mixto | `mode:=mixed` | Fusión predictiva: utiliza odometría de encoders para predicción cinemática continua de alta frecuencia y corrige periódicamente la pose absoluta con cada escaneo LiDAR procesado por ICP. |
 
----
+## Transformaciones y tópicos
 
-## 3. Árbol de Transformadas (/tf) y Tópicos
+Las transformaciones se publican en `/tf`. Teach y Repeat comparten los marcos `odom`, `reference` y `base_link`.
 
-El sistema respeta rigurosamente las convenciones de marcos de referencia exigidas por la consigna del trabajo práctico:
+### Teach
 
-### 3.1 Etapa de Aprendizaje (Teach)
-- **Transformadas activas en `/tf`:**
+- Transformadas activas en `/tf`:
   - `odom -> reference`: Pose absoluta del keyframe de referencia activo en el mapa respecto al origen de odometría.
   - `reference -> base_link`: Pose relativa del robot respecto al keyframe de referencia actual.
-- **Tópico `/rel_odom` (`nav_msgs/Odometry`):** Publica la posición y orientación relativa del robot respecto al último keyframe registrado.
-- **Registro de ruta:** Se añaden keyframes cada vez que el robot se desplaza una distancia superior a `keyframe_distance` (0.20 m) o gira un ángulo mayor a `keyframe_angle` (0.25 rad).
 
-### 3.2 Etapa de Repetición Autónoma (Repeat)
-- **Transformadas activas en `/tf`:**
+- Tópico `/rel_odom` (`nav_msgs/Odometry`): Publica la posición y orientación relativa del robot respecto al último keyframe registrado.
+
+- Registro de ruta: Se añaden keyframes cada vez que el robot se desplaza una distancia superior a `keyframe_distance` (0.20 m) o gira un ángulo mayor a `keyframe_angle` (0.25 rad).
+
+### Repeat
+
+- Transformadas activas en `/tf`:
   - `odom -> reference` y `reference -> base_link`: Mantiene la localización unificada continua.
   - `base_link -> map_current_keyframe`: Localización relativa del robot respecto al marco del keyframe activo del Teach.
   - `map_current_keyframe -> map_next_keyframe`: Desplazamiento relativo hacia el siguiente keyframe objetivo en la secuencia aprendida.
   - `base_link -> setpoint`: Vector instantáneo de persecución hacia el objetivo local del controlador.
-- **Controlador de Navegación:** Lazo cerrado en coordenadas polares $(\rho, \alpha, \beta)$ que publica consignas de velocidad en `/cmd_vel` para converger suavemente hacia cada keyframe hasta alcanzar la meta final.
 
----
+- Controlador de Navegación: Lazo cerrado en coordenadas polares $(\rho, \alpha, \beta)$ que publica consignas de velocidad en `/cmd_vel` para converger suavemente hacia cada keyframe hasta alcanzar la meta final.
 
-## 4. Ejecución en Simulación (Gazebo Harmonic)
+## Simulación
 
-El sistema provee dos vías de ejecución: mediante **scripts automatizados** en `sim/` (que gestionan automáticamente el reseteo de pose, el inicio del nodo y la grabación del rosbag con `trap` de cierre limpio), o mediante **comandos nativos de ROS 2**.
+Los scripts de `sim/` reposicionan el robot, lanzan los nodos y graban el rosbag. Más abajo se muestran los comandos para ejecutar los componentes por separado.
 
----
+### Enseñar y repetir una ruta
 
-### 4.1 Flujo Automatizado con Scripts (`sim/`)
+#### 1. Gazebo (terminal 1)
 
-#### Paso 1: Lanzar el Simulador (Panel 1)
 Inicia Gazebo Harmonic con el mundo del laberinto hexagonal (`turtlebot3_world`), el puente ROS-Gazebo (`ros_gz_bridge`), y el TurtleBot3 Burger posicionado en `x=-2.0`, `y=-0.5`:
 ```bash
 pixi run --frozen sim
 ```
 
-#### Paso 2: Fase Teach — Enseñar la Ruta (Panel 2)
+#### 2. Teach (terminal 2)
+
 Inicia el nodo de aprendizaje, resetea la pose inicial en Gazebo y graba el rosbag en segundo plano:
 ```bash
 ./sim/teach.sh mixed
 # Modos disponibles: encoders | lidar | mixed (por defecto: lidar)
 ```
-*Archivos generados:*
+Archivos generados:
+
 - Ruta serializada: `routes/sim_route_<modo>.json`
+
 - Rosbag: `evidence/simulacion/teach_bag_<modo>`
 
-#### Paso 3: Teleoperación del Robot (Panel 3)
+#### 3. Teleoperación (terminal 3)
+
 En una tercera terminal, abre el nodo de teleoperación por teclado:
 ```bash
 pixi run --frozen teleop
 ```
+
 - Controles: `w` (avanzar), `s` (retroceder), `a` (girar izquierda), `d` (girar derecha), `espacio` (frenar).
+
 - Presionar `q` para salir del teleoperador al terminar el recorrido guiado.
 
-#### Paso 4: Guardado de la Ruta y Cierre del Rosbag
+#### 4. Guardar la ruta
+
 Existen dos formas de consolidar la ruta enseñada:
-- **Guardado Automático:** En la terminal de Teach (Panel 2), presionar `Ctrl+C`. El script intercepta la señal mediante su trampa (`trap cleanup EXIT`), solicita automáticamente el guardado de la ruta al servicio `/tnr/save_route`, aguarda la sincronización del archivo `.json`, y cierra ordenadamente el rosbag garantizando un `metadata.yaml` íntegro.
-- **Guardado Manual con Verificación:** En una terminal auxiliar (Panel 4), invocar el servicio ROS 2:
+
+- Guardado Automático: En la terminal de Teach (Panel 2), presionar `Ctrl+C`. El script intercepta la señal mediante su trampa (`trap cleanup EXIT`), solicita automáticamente el guardado de la ruta al servicio `/tnr/save_route`, aguarda la sincronización del archivo `.json`, y cierra ordenadamente el rosbag garantizando un `metadata.yaml` íntegro.
+
+- Guardado Manual con Verificación: En una terminal auxiliar (Panel 4), invocar el servicio ROS 2:
   ```bash
   pixi run --frozen ros2 service call /tnr/save_route std_srvs/srv/Trigger '{}'
   ```
   Esperar la respuesta `success: true`. Luego, presionar `Ctrl+C` en el Panel 2 para cerrar el rosbag.
 
-#### Paso 5: Fase Repeat — Repetición Autónoma (Panel 2)
+#### 5. Repeat (terminal 2)
+
 Una vez guardada la ruta del modo correspondiente, ejecutar:
 ```bash
 ./sim/repeat.sh mixed
 # Modos disponibles: encoders | lidar | mixed (por defecto: lidar)
 ```
-*Comportamiento del script:*
+Comportamiento del script:
+
 1. Reposiciona automáticamente al TurtleBot3 en Gazebo al origen exacto del Teach (`x=-2.0, y=-0.5, yaw=0.0`).
 2. Inicia la grabación del rosbag de validación en `evidence/simulacion/repeat_bag_<modo>`.
 3. Lanza el nodo de localización y el controlador en lazo cerrado para reproducir los keyframes aprendidos.
 4. Cuando el robot alcanza la meta, se detiene y publica `data: true` en `/tnr/done`.
-5. **Cierre:** Al visualizar el fin de la trayectoria (`keyframe=N:done=True`), presionar `Ctrl+C` en la terminal para consolidar y cerrar el rosbag con su metadato validado.
+5. Cierre: Al visualizar el fin de la trayectoria (`keyframe=N:done=True`), presionar `Ctrl+C` en la terminal para consolidar y cerrar el rosbag con su metadato validado.
 
----
-
-### 4.2 Visualización Gráfica en RViz2
+### RViz
 
 Los scripts de simulación ejecutan por defecto sin interfaz RViz2 para optimizar recursos. Para monitorear visualmente las trayectorias, nubes de puntos y keyframes en vivo, abrir otra terminal y ejecutar:
 ```bash
 pixi run --frozen rviz
 ```
-*(Opcional: para inspeccionar exclusivamente el árbol de marcos coordenados TF, usar `pixi run --frozen rviz-tf`).*
+(Opcional: para inspeccionar exclusivamente el árbol de marcos coordenados TF, usar `pixi run --frozen rviz-tf`).
 
-> [!TIP]
-> Para lanzar Repeat con RViz2 integrado directamente en el mismo proceso, invocar:
-> ```bash
-> RVIZ=true ./sim/repeat.sh mixed
-> ```
+Para lanzar Repeat con RViz2 integrado directamente en el mismo proceso, invocar:
+```bash
+RVIZ=true ./sim/repeat.sh mixed
+```
 
----
-
-### 4.3 Comandos Nativos de ROS 2 y Gazebo
+### Ejecutar sin los scripts
 
 Si se desea prescindir de los scripts shell y ejecutar cada componente de forma nativa:
 
-1. **Lanzar Gazebo Harmonic sin GUI (modo headless):**
+1. Lanzar Gazebo Harmonic sin GUI (modo headless):
    ```bash
    pixi run --frozen ros2 launch tp1_teach_repeat sim.launch.py gui:=false
    ```
 
-2. **Reposicionar manualmente el robot en Gazebo:**
+2. Reposicionar manualmente el robot en Gazebo:
    ```bash
    pixi run --frozen gz service -s /world/default/set_pose \
      --reqtype gz.msgs.Pose --reptype gz.msgs.Boolean --timeout 5000 \
      --req 'name: "burger" position: {x: -2.0 y: -0.5 z: 0.01} orientation: {w: 1.0}'
    ```
 
-3. **Lanzar Teach nativo:**
+3. Lanzar Teach nativo:
    ```bash
    pixi run --frozen ros2 launch tp1_teach_repeat teach.launch.py \
      mode:=mixed route_file:=routes/sim_route_mixed.json overwrite:=true rviz:=true
    ```
 
-4. **Lanzar Repeat nativo:**
+4. Lanzar Repeat nativo:
    ```bash
    pixi run --frozen ros2 launch tp1_teach_repeat repeat.launch.py \
      mode:=mixed route_file:=routes/sim_route_mixed.json rviz:=true
    ```
 
----
+## Robot real
 
-## 5. Ejecución en Robot Real (TurtleBot 4)
+Los scripts de `real/` permiten ejecutar el sistema en los TurtleBot 4 del laboratorio.
 
-El directorio `real/` contiene los scripts modulares para el despliegue físico sobre las plataformas móviles TurtleBot 4 (base iRobot Create 3) del laboratorio.
+### Red del laboratorio
 
-### 5.1 Configuración de Red y Robots
 Para comunicarse con las plataformas, la estación de trabajo debe estar conectada a la misma red local (Wi-Fi/LAN) del laboratorio:
-- **Robot 1 (por defecto):** IP `172.23.16.70`, namespace `/tb4_1`, `ROS_DOMAIN_ID=1`.
-- **Robot 2:** IP `172.23.16.88`, namespace `/tb4_2`, `ROS_DOMAIN_ID=2`.
 
-La sincronización DDS se realiza mediante **FastDDS Discovery Server** apuntando al puerto `11811` del robot seleccionado (`ROS_DISCOVERY_SERVER="<IP>:11811"`). Los scripts gestionan estas variables de entorno, perfiles super-client y namespaces de forma automática.
+- Robot 1 (por defecto): IP `172.23.16.70`, namespace `/tb4_1`, `ROS_DOMAIN_ID=1`.
 
-> [!TIP]
-> Para abrir una terminal interactiva con el entorno DDS cargado (útil para diagnósticos como `ros2 topic list` o `ros2 topic hz`):
-> ```bash
-> source real/env.sh 1   # Carga entorno para Robot 1 (o 'source real/env.sh 2' para Robot 2)
-> ```
+- Robot 2: IP `172.23.16.88`, namespace `/tb4_2`, `ROS_DOMAIN_ID=2`.
 
-### 5.2 Flujo de Operación Física
+La sincronización DDS se realiza mediante FastDDS Discovery Server apuntando al puerto `11811` del robot seleccionado (`ROS_DISCOVERY_SERVER="<IP>:11811"`). Los scripts gestionan estas variables de entorno, perfiles super-client y namespaces de forma automática.
 
-#### Paso 1: Fase Teach (Enseñar la Ruta)
+Para abrir una terminal interactiva con el entorno DDS cargado (útil para diagnósticos como `ros2 topic list` o `ros2 topic hz`):
+```bash
+source real/env.sh 1   # Carga entorno para Robot 1 (o 'source real/env.sh 2' para Robot 2)
+```
+
+### Enseñar y repetir una ruta
+
+#### 1. Teach
+
 En la primera terminal, iniciar el nodo Teach indicando el modo de localización (`encoders`, `lidar` o `mixed`) y el robot (`1` o `2`):
 ```bash
 ./real/teach.sh mixed 1
 # Sintaxis: ./real/teach.sh [encoders|lidar|mixed] [1|2] (por defecto: lidar 1)
 ```
-*El script graba automáticamente el rosbag del ensayo en `evidence/laboratorio/teach_bag_<modo>`.*
+El script graba automáticamente el rosbag del ensayo en `evidence/laboratorio/teach_bag_<modo>`.
 
-#### Paso 2: Teleoperación del Robot Físico
+#### 2. Teleoperación
+
 En una segunda terminal, iniciar la teleoperación por teclado hacia el robot deseado:
 ```bash
 ./real/teleop.sh 1
 # Sintaxis: ./real/teleop.sh [1|2] (por defecto: 1)
 ```
+
 - Controles: `i` (avanzar), `,` (retroceder), `j` (girar izquierda), `l` (girar derecha), `k` (frenar).
+
 - Conducir el robot registrando la ruta deseada. Al finalizar, salir del teleop con `Ctrl+C`.
 
-#### Paso 3: Visualización en RViz2
+#### 3. RViz
+
 En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los keyframes en tiempo real:
 ```bash
 ./real/rviz.sh 1
 # Sintaxis: ./real/rviz.sh [1|2] (por defecto: 1)
 ```
 
-#### Paso 4: Finalizar y Guardar la Ruta
-- **Método automático (recomendado):** Presionar `Ctrl+C` en la terminal donde corre `./real/teach.sh`. El script ejecuta el guardado automático de la ruta en `routes/lab_route_<modo>.json` y cierra el rosbag de forma limpia.
-- **Método manual (desde otra terminal):**
+#### 4. Guardar la ruta
+
+- Método automático (recomendado): Presionar `Ctrl+C` en la terminal donde corre `./real/teach.sh`. El script ejecuta el guardado automático de la ruta en `routes/lab_route_<modo>.json` y cierra el rosbag de forma limpia.
+
+- Método manual (desde otra terminal):
   ```bash
   source real/env.sh 1
   ros2 service call /tnr/save_route std_srvs/srv/Trigger '{}'
   ```
 
-#### Paso 5: Fase Repeat (Repetición Autónoma)
+#### 5. Repeat
+
 1. Colocar físicamente el robot en la posición y orientación inicial del Teach.
 2. Ejecutar el script de repetición:
 ```bash
@@ -266,84 +279,91 @@ En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los ke
 # Sintaxis: ./real/repeat.sh [encoders|lidar|mixed] [1|2] (por defecto: lidar 1)
 # Opcional con RViz integrado: RVIZ=true ./real/repeat.sh mixed 1
 ```
-*El controlador polar guiará al robot a lo largo de los keyframes de `routes/lab_route_<modo>.json` y registrará las métricas de repetición en `evidence/laboratorio/repeat_bag_<modo>` hasta publicar `data: true` en `/tnr/done`.*
+El controlador polar guiará al robot a lo largo de los keyframes de `routes/lab_route_<modo>.json` y registrará las métricas de repetición en `evidence/laboratorio/repeat_bag_<modo>` hasta publicar `data: true` en `/tnr/done`.
 
----
-
-## 6. Visualización en RViz2
+## Qué muestra RViz
 
 El archivo de configuración [`tp1_view.rviz`](ros_ws/src/Grupo4/tp1_teach_repeat/config/tp1_view.rviz) despliega:
-- **Indicador de Método Activo:** Marcador de texto con el modo en ejecución (`ENCODERS`, `LIDAR`, `MIXTO`).
-- **Trayectorias:** Línea continua del recorrido Teach (naranja) y trayectoria en vivo de Repeat (turquesa).
-- **Keyframes:** Esferas y flechas de orientación sobre cada punto de referencia guardado.
-- **Setpoint y Meta:** Vector visual hacia el objetivo instantáneo magenta y etiqueta de estado de aproximación.
-- **Mapa de Celdas y Láser:** Nube de puntos proyectada y celdas de ocupación 2D correspondientes a las paredes detectadas.
-- **Calidad de Alineación ICP:** Muestra en tiempo real el valor de RMSE residual en centímetros y el porcentaje de solapamiento (Overlap) del escaneo láser contra el mapa de keyframes.
 
----
+- Indicador de Método Activo: Marcador de texto con el modo en ejecución (`ENCODERS`, `LIDAR`, `MIXTO`).
 
-## 7. Análisis de Resultados y Comparativa de Métricas
+- Trayectorias: Línea continua del recorrido Teach (naranja) y trayectoria en vivo de Repeat (turquesa).
 
-El proyecto cuenta con herramientas automatizadas para analizar, verificar y contrastar el desempeño de los tres métodos de localización a partir de los rosbags grabados en simulación y laboratorio.
+- Keyframes: Esferas y flechas de orientación sobre cada punto de referencia guardado.
 
-### 7.1 Comparativa de Simulación (Gazebo)
+- Setpoint y Meta: Vector visual hacia el objetivo instantáneo magenta y etiqueta de estado de aproximación.
+
+- Mapa de Celdas y Láser: Nube de puntos proyectada y celdas de ocupación 2D correspondientes a las paredes detectadas.
+
+- Calidad de Alineación ICP: Muestra en tiempo real el valor de RMSE residual en centímetros y el porcentaje de solapamiento (Overlap) del escaneo láser contra el mapa de keyframes.
+
+## Resultados y gráficos
+
+Los scripts de `scripts/` generan los gráficos y las métricas a partir de los rosbags de simulación y laboratorio.
+
+### Simulación
+
 Para procesar las bolsas de datos de simulación (`evidence/simulacion/`) y calcular las métricas respecto a la trayectoria del Teach:
 
 ```bash
 pixi run python scripts/plot_sim_comparison.py
 ```
-*Argumentos opcionales:*
+Argumentos opcionales:
+
 - `--output`: Ruta de la imagen resultante (por defecto: `evidence/simulacion/comparativa_simulacion.png`).
+
 - `--summary`: Ruta del archivo Markdown de resumen (por defecto: `evidence/simulacion/metricas_simulacion.md`).
 
 El script procesa los rosbags en formato MCAP y genera:
-1. **Figura integral de 3 paneles** ([`comparativa_simulacion.png`](evidence/simulacion/comparativa_simulacion.png)):
-   - **Panel 1 (Izquierda):** Trayectorias 2D superpuestas del recorrido enseñado (con sus keyframes, inicio y meta) frente a las repeticiones autónomas de Encoders, LiDAR 2D y Mixto, en proporción 1:1 (`axis('equal')`).
-   - **Panel 2 (Superior derecho):** Error lateral instantáneo (Cross-Track Error en cm) a lo largo del tiempo de navegación, suavizado mediante ventana Hanning.
-   - **Panel 3 (Inferior derecho):** Calidad de la correspondencia geométrica ICP LiDAR (RMSE residual scan-to-keyframe en cm) para los modos LiDAR y Mixto.
-2. **Tabla de Métricas en Markdown** ([`metricas_simulacion.md`](evidence/simulacion/metricas_simulacion.md)):
+
+1. Gráfico de tres paneles ([`comparativa_simulacion.png`](evidence/simulacion/comparativa_simulacion.png)):
+   - Panel 1 (Izquierda): Trayectorias 2D superpuestas del recorrido enseñado (con sus keyframes, inicio y meta) frente a las repeticiones autónomas de Encoders, LiDAR 2D y Mixto, en proporción 1:1 (`axis('equal')`).
+   - Panel 2 (Superior derecho): Error lateral instantáneo (Cross-Track Error en cm) a lo largo del tiempo de navegación, suavizado mediante ventana Hanning.
+   - Panel 3 (Inferior derecho): Calidad de la correspondencia geométrica ICP LiDAR (RMSE residual scan-to-keyframe en cm) para los modos LiDAR y Mixto.
+2. Resumen de métricas ([`metricas_simulacion.md`](evidence/simulacion/metricas_simulacion.md)):
    Actualiza automáticamente la tabla comparativa con duraciones, errores estadísticos y tasa de keyframes completados.
 
-#### Tabla Resumen de Métricas (Simulación)
+#### Resultados registrados
+
 | Métrica | Encoders | LiDAR 2D (ICP) | Mixto |
 |---|---|---|---|
-| **Duración total** | 109.9 s | 114.2 s | 113.5 s |
-| **Error lateral medio (CTE)** | 0.12 cm | 0.50 cm | 0.40 cm |
-| **Error lateral máximo** | 1.30 cm | 2.13 cm | 2.00 cm |
-| **Error lateral Percentil 95** | 0.42 cm | 1.30 cm | 1.12 cm |
-| **Precisión de llegada a meta** | 2.75 cm | 2.63 cm | 3.03 cm |
-| **Keyframes completados** | 100% (50/50) | 100% (52/52) | 100% (49/49) |
+| Duración total | 109.9 s | 114.2 s | 113.5 s |
+| Error lateral medio (CTE) | 0.12 cm | 0.50 cm | 0.40 cm |
+| Error lateral máximo | 1.30 cm | 2.13 cm | 2.00 cm |
+| Error lateral Percentil 95 | 0.42 cm | 1.30 cm | 1.12 cm |
+| Precisión de llegada a meta | 2.75 cm | 2.63 cm | 3.03 cm |
+| Keyframes completados | 100% (50/50) | 100% (52/52) | 100% (49/49) |
 
----
+### Laboratorio
 
-### 7.2 Comparativa de Ensayos en Robot Real (Laboratorio)
 Para procesar las bolsas de datos registradas en la plataforma física (`evidence/laboratorio/`):
 
 ```bash
 pixi run python scripts/plot_real_comparison.py --output validation/real_comparison
 ```
-*Argumentos opcionales:*
+Argumentos opcionales:
+
 - `--output <directorio>`: Carpeta de destino (por defecto: `validation/real_comparison/`).
+
 - `--common-window`: Normaliza el análisis a la ventana temporal mínima común entre los tres ensayos (23.8 s), permitiendo una comparativa temporal directa.
 
-El script procesa las bases de datos SQLite3 (`.db3`) y produce tres entregables:
-1. **Figura comparativa de 6 paneles (`comparacion_robot_real.png`):**
-   - **Fila superior (3 paneles):** Recorrido 2D del Teach frente al Repeat para cada modo (Encoders, LiDAR, Mixto), superpuesto sobre la nube de puntos acumulada del mapa láser.
-   - **Fila inferior (3 paneles):** 
+El script lee los rosbags SQLite3 (`.db3`) y genera:
+
+1. Figura comparativa de 6 paneles (`comparacion_robot_real.png`):
+   - Fila superior (3 paneles): Recorrido 2D del Teach frente al Repeat para cada modo (Encoders, LiDAR, Mixto), superpuesto sobre la nube de puntos acumulada del mapa láser.
+   - Fila inferior (3 paneles):
      - *Distancia a Teach:* Desvío lateral instantáneo respecto a la trayectoria de referencia (cm).
      - *Progreso de referencias:* Porcentaje acumulado de keyframes de ruta alcanzados (0 a 100%).
      - *Alineación ICP:* RMSE residual de la correspondencia escaneo-mapa (cm).
-2. **Resumen en formato CSV (`metricas.csv`):**
+2. Resumen en formato CSV (`metricas.csv`):
    Detalla variables cuantitativas por modo: `observed_cross_track_rms_m`, `observed_cross_track_max_m`, `reference_index_percent`, `completion_time_s` y estado de completitud.
-3. **Reporte de Procedencia y Validación (`resultados.json`):**
-   Estructura en formato JSON las métricas computadas junto con las firmas criptográficas SHA-256 de los rosbags y rutas originales para auditoría y reproducibilidad científica.
+3. Archivos de origen (`resultados.json`):
+   Guarda las métricas y los hashes SHA-256 de los rosbags y las rutas utilizadas.
 
-> [!NOTE]
-> En los ensayos reales registrados, los modos por Encoders (23.8 s) y LiDAR (43.7 s) corresponden a tramos de prueba parciales (18.75% y 28.70% de progreso respectivo), mientras que la fusión **Mixta** completó con éxito el recorrido completo de 19.77 m y 112 keyframes en 111.3 s de forma 100% autónoma con un error lateral RMS de apenas 1.78 cm.
+Los registros de Encoders (23.8 s) y LiDAR (43.7 s) son parciales: alcanzan el 18.75% y el 28.70% de las referencias, respectivamente. Mixto registra la finalización en 111.3 s, con índice final 112 y un desvío geométrico RMS estimado de 1.78 cm. La polilínea Teach suma 19.77 m estimados. Las rutas difieren y no hay una medición externa de posición, por lo que estos valores no permiten comparar precisión física ni tiempos de llegada entre los tres modos.
 
----
+### Graficar una sesión
 
-### 7.3 Visualización Detallada de Sesiones Individuales
 Para generar gráficos específicos de un recorrido particular inspeccionando los escaneos LiDAR y el setpoint de control en un instante dado:
 
 ```bash
@@ -354,28 +374,34 @@ pixi run python scripts/plot_run.py \
   --title "Sesion Repeat Mixto - Simulacion"
 ```
 
-**Parámetros de `scripts/plot_run.py`:**
+Parámetros de `scripts/plot_run.py`:
+
 - `--bag <ruta>`: Ruta al directorio del rosbag (admite formato MCAP y SQLite3).
+
 - `--route <ruta>`: *(Requerido)* Ruta al archivo JSON con la definición de la ruta (`routes/*.json`).
+
 - `--out <ruta>`: Ruta del archivo PNG de salida (por defecto: `evidence/run_plot.png`).
+
 - `--title <texto>`: Título personalizado de la visualización (por defecto: nombre de la carpeta del bag).
+
 - `--time <segundos>`: Instante temporal específico a inspeccionar. Representa en la figura la pose instantánea del robot, el escaneo láser actual (rojo), los puntos de referencia almacenados en el keyframe objetivo (verde) y el setpoint comandado por el controlador.
 
----
+### Videos
 
-### 7.4 Material para Presentación (5 minutos)
 En la carpeta [`Videos/`](Videos/) se encuentran grabaciones de las demostraciones prácticas aceleradas a 2x:
+
 - [`Videos/Encoders-Simulacion.mp4`](Videos/Encoders-Simulacion.mp4): Repetición en simulación por encoders puros.
+
 - [`Videos/Lidar-Simulacion.mp4`](Videos/Lidar-Simulacion.mp4): Repetición en simulación por LiDAR 2D ICP.
+
 - [`Videos/Mixto-Simulacion.mp4`](Videos/Mixto-Simulacion.mp4): Repetición en simulación por modo Mixto.
+
 - [`Videos/Repeat-Mixto-Laboratorio.mp4`](Videos/Repeat-Mixto-Laboratorio.mp4): Demostración en vivo en robot real TurtleBot 4 en el laboratorio.
 
----
-
-## 8. Estructura del Repositorio
+## Estructura del repositorio
 
 ```text
-Advance-Robotics-tp1/
+Advanced-Robotics-tp1/
 ├── ros_ws/src/Grupo4/tp1_teach_repeat/   # Paquete principal ROS 2
 │   ├── config/params.yaml                # Parámetros calibrados para simulación (TB3)
 │   ├── launch/                           # teach.launch.py, repeat.launch.py, sim.launch.py
