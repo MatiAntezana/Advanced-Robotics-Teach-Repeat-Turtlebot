@@ -1,5 +1,7 @@
 # TP1 — Sistema Teach & Repeat para Robot Móvil Diferencial
 
+Autores: Matias Luciano Antezana, Ignacio Schuemer y Segundo Santos Torrado.
+
 Trabajo práctico de Robótica Avanzada, Grupo 4. Implementa Teach & Repeat en ROS 2: se enseña una ruta por teleoperación y luego el robot la repite de forma autónoma siguiendo referencias guardadas (keyframes).
 
 La localización puede usar encoders, LiDAR 2D con ICP de Open3D o una combinación de ambos. Se probó en Gazebo Harmonic con TurtleBot3 Burger y en el laboratorio con TurtleBot 4, base iRobot Create 3.
