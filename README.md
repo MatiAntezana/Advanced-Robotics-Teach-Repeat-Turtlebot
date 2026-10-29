@@ -235,18 +235,21 @@ source real/env.sh 2   # Carga entorno para Robot 2 (o 'source real/env.sh 1' pa
 
 #### 1. Teach
 
-En la primera terminal, iniciar el nodo Teach indicando el modo de localización (`encoders`, `lidar` o `mixed`) y el robot (`2` o `1`):
+En la primera terminal, iniciar el nodo Teach indicando el modo de localización (`encoders`, `lidar` o `mixed`), el robot (`2` o `1`) y opcionalmente el circuito (por defecto `circuito-2`):
 ```bash
-./real/teach.sh mixed 2
-# Sintaxis: ./real/teach.sh [encoders|lidar|mixed] [2|1] (por defecto: lidar 2)
+./real/teach.sh lidar
+# Sintaxis: ./real/teach.sh [encoders|lidar|mixed] [robot] [circuito]
+# Por defecto: lidar 2 circuito-2
 ```
-El script graba automáticamente el rosbag del ensayo en `evidence/laboratorio/teach_bag_<modo>`.
+Archivos generados:
+- Ruta serializada: `routes/<circuito>/lab_route_<modo>.json` (y copia en `routes/lab_route_<modo>.json`)
+- Rosbag Teach: `evidence/laboratorio/<circuito>/teach_bag_<modo>`
 
 #### 2. Teleoperación
 
 En una segunda terminal, iniciar la teleoperación por teclado hacia el robot deseado:
 ```bash
-./real/teleop.sh 2
+./real/teleop.sh
 # Sintaxis: ./real/teleop.sh [2|1] (por defecto: 2)
 ```
 
@@ -258,17 +261,17 @@ En una segunda terminal, iniciar la teleoperación por teclado hacia el robot de
 
 En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los keyframes en tiempo real:
 ```bash
-./real/rviz.sh 2
+./real/rviz.sh
 # Sintaxis: ./real/rviz.sh [2|1] (por defecto: 2)
 ```
 
 #### 4. Guardar la ruta
 
-- Método automático (recomendado): Presionar `Ctrl+C` en la terminal donde corre `./real/teach.sh`. El script ejecuta el guardado automático de la ruta en `routes/lab_route_<modo>.json` y cierra el rosbag de forma limpia.
+- Método automático (recomendado): Presionar `Ctrl+C` en la terminal donde corre `./real/teach.sh`. El script ejecuta el guardado automático de la ruta y cierra el rosbag de forma limpia.
 
 - Método manual (desde otra terminal):
   ```bash
-  source real/env.sh 2
+  source real/env.sh
   ros2 service call /tnr/save_route std_srvs/srv/Trigger '{}'
   ```
 
@@ -277,11 +280,12 @@ En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los ke
 1. Colocar físicamente el robot en la posición y orientación inicial del Teach.
 2. Ejecutar el script de repetición:
 ```bash
-./real/repeat.sh mixed 2
-# Sintaxis: ./real/repeat.sh [encoders|lidar|mixed] [2|1] (por defecto: lidar 2)
-# Opcional con RViz integrado: RVIZ=true ./real/repeat.sh mixed 2
+./real/repeat.sh lidar
+# Sintaxis: ./real/repeat.sh [encoders|lidar|mixed] [robot] [circuito]
+# Por defecto: lidar 2 circuito-2
+# Opcional con RViz integrado: RVIZ=true ./real/repeat.sh lidar
 ```
-El controlador polar guiará al robot a lo largo de los keyframes de `routes/lab_route_<modo>.json` y registrará las métricas de repetición en `evidence/laboratorio/repeat_bag_<modo>` hasta publicar `data: true` en `/tnr/done`.
+El controlador polar guiará al robot a lo largo de los keyframes aprendidos y registrará las métricas de repetición en `evidence/laboratorio/<circuito>/repeat_bag_<modo>` hasta publicar `data: true` en `/tnr/done`.
 
 ## Qué muestra RViz
 

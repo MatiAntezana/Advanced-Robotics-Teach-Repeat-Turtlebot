@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# Repeat + rosbag. Uso: real/repeat.sh [encoders|lidar|mixed] [robot]
-# Ruta <- routes/lab_route_<modo>.json   Rosbag -> evidence/laboratorio/repeat_bag_<modo>
+# Repeat + rosbag. Uso: real/repeat.sh [encoders|lidar|mixed] [robot] [circuito]
+# Ruta <- routes/<circuito>/lab_route_<modo>.json
+# Rosbag -> evidence/laboratorio/<circuito>/repeat_bag_<modo>
 # Poner RVIZ=true para abrir RViz desde el launch. Ctrl+C cierra el bag.
 set -e
 MODE="${1:-lidar}"
 ROBOT_ID="${2:-${ROBOT_ID:-2}}"
+CIRCUIT="${3:-${CIRCUIT:-circuito-2}}"
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-mkdir -p "${REPO_DIR}/evidence/laboratorio"
+mkdir -p "${REPO_DIR}/evidence/laboratorio/${CIRCUIT}"
 
-ROUTE_FILE="${REPO_DIR}/routes/lab_route_${MODE}.json"
-BAG_DIR="${REPO_DIR}/evidence/laboratorio/repeat_bag_${MODE}"
+ROUTE_FILE="${REPO_DIR}/routes/${CIRCUIT}/lab_route_${MODE}.json"
+[ -f "${ROUTE_FILE}" ] || ROUTE_FILE="${REPO_DIR}/routes/lab_route_${MODE}.json"
 [ -f "${ROUTE_FILE}" ] || { echo "No existe ${ROUTE_FILE} (hacé el Teach primero)"; exit 1; }
 
-echo "REPEAT + ROSBAG | Robot ${ROBOT_ID} | modo ${MODE}"
+BAG_DIR="${REPO_DIR}/evidence/laboratorio/${CIRCUIT}/repeat_bag_${MODE}"
+
+echo "REPEAT + ROSBAG | Robot ${ROBOT_ID} | modo ${MODE} | circuito ${CIRCUIT}"
 echo "Ruta: ${ROUTE_FILE}"
 echo "Rosbag: ${BAG_DIR}"
 

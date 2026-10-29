@@ -53,13 +53,18 @@ def path_distance(points, reference):
     return np.asarray(out)
 
 
-def load_mode(mode, max_duration=None):
+def load_mode(mode, max_duration=None, circuit='circuito-1'):
     """Carga los datos de trayectoria, odometria y metricas de un modo."""
-    route_path = ROOT / 'routes' / f'lab_route_{mode}.json'
+    route_path = ROOT / 'routes' / circuit / f'lab_route_{mode}.json'
+    if not route_path.exists():
+        route_path = ROOT / 'routes' / f'lab_route_{mode}.json'
     route = json.loads(route_path.read_text())
     if route['mode'] != mode or route['frame'] != 'odom':
         raise ValueError(f'Ruta incompatible: {route_path}')
-    bag, paths = read_bag(ROOT / 'evidence' / 'laboratorio' / f'repeat_bag_{mode}')
+    bag_dir = ROOT / 'evidence' / 'laboratorio' / circuit / f'repeat_bag_{mode}'
+    if not bag_dir.exists():
+        bag_dir = ROOT / 'evidence' / 'laboratorio' / f'repeat_bag_{mode}'
+    bag, paths = read_bag(bag_dir)
     status = [(t, m.data) for t, m in bag['/tnr/status']]
     if not status or any(not s.startswith(f'repeat:{mode}:') for _, s in status):
         raise ValueError(f'Status ausente o inconsistente: {mode}')
@@ -141,15 +146,17 @@ def load_mode(mode, max_duration=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT/'validation'/'real_comparison')
+    parser.add_argument('--circuit', type=str, default='circuito-1',
+                        help='Subdirectorio del circuito (circuito-1 o circuito-2)')
     parser.add_argument('--common-window', action='store_true',
                         help='Ajusta la comparacion a la duracion comun menor')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    results = [load_mode(mode) for mode, _, _ in MODES]
+    results = [load_mode(mode, circuit=args.circuit) for mode, _, _ in MODES]
     common = None
     if args.common_window:
         common = min(r['summary']['observed_window_s'] for r in results)
-        results = [load_mode(mode, common) for mode, _, _ in MODES]
+        results = [load_mode(mode, common, circuit=args.circuit) for mode, _, _ in MODES]
     for r in results:
         target = min(r['summary']['last_reference_index']+1, len(r['kfs'])-1)
         r['shown_kfs'] = r['kfs'][:target+1] if common is not None else r['kfs']

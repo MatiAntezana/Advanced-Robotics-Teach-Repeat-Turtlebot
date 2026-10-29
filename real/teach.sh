@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
-# Teach + rosbag. Uso: real/teach.sh [encoders|lidar|mixed] [robot]
-# Ruta -> routes/lab_route_<modo>.json   Rosbag -> evidence/laboratorio/teach_bag_<modo>
+# Teach + rosbag. Uso: real/teach.sh [encoders|lidar|mixed] [robot] [circuito]
+# Ruta -> routes/<circuito>/lab_route_<modo>.json
+# Rosbag -> evidence/laboratorio/<circuito>/teach_bag_<modo>
 # Mover el robot con real/teleop.sh; Ctrl+C aquí guarda la ruta y cierra el bag.
 set -e
 MODE="${1:-lidar}"
 ROBOT_ID="${2:-${ROBOT_ID:-2}}"
+CIRCUIT="${3:-${CIRCUIT:-circuito-2}}"
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-mkdir -p "${REPO_DIR}/routes" "${REPO_DIR}/evidence/laboratorio"
+mkdir -p "${REPO_DIR}/routes/${CIRCUIT}" "${REPO_DIR}/evidence/laboratorio/${CIRCUIT}"
 
-ROUTE_FILE="${REPO_DIR}/routes/lab_route_${MODE}.json"
-BAG_DIR="${REPO_DIR}/evidence/laboratorio/teach_bag_${MODE}"
+ROUTE_FILE="${REPO_DIR}/routes/${CIRCUIT}/lab_route_${MODE}.json"
+BAG_DIR="${REPO_DIR}/evidence/laboratorio/${CIRCUIT}/teach_bag_${MODE}"
 
-echo "TEACH + ROSBAG | Robot ${ROBOT_ID} | modo ${MODE}"
+echo "TEACH + ROSBAG | Robot ${ROBOT_ID} | modo ${MODE} | circuito ${CIRCUIT}"
 echo "Ruta: ${ROUTE_FILE}"
 echo "Rosbag: ${BAG_DIR}"
 echo "Mové el robot con real/teleop.sh. Ctrl+C aquí para guardar todo."
@@ -30,6 +32,7 @@ cleanup() {
   echo "Cerrando rosbag..."
   kill -2 $BAG_PID 2>/dev/null || true
   wait $BAG_PID 2>/dev/null || true
+  cp -f "${ROUTE_FILE}" "${REPO_DIR}/routes/lab_route_${MODE}.json" 2>/dev/null || true
   echo "LISTO: ${ROUTE_FILE} | ${BAG_DIR}"
 }
 trap cleanup EXIT
