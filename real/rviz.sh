@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Abre RViz con la configuración del TP. Uso: real/rviz.sh [robot]
 set -e
-ROBOT_ID="${1:-${ROBOT_ID:-1}}"
+ROBOT_ID="${1:-${ROBOT_ID:-2}}"
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 export DISPLAY="${DISPLAY:-:0}"
 

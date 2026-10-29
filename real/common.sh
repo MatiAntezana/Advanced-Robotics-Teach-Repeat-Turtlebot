@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Configuración común del robot real. Se usa con `source` desde los demás scripts.
-# Robot por defecto: 1. Cambiar con ROBOT_ID=2 o pasando el robot como último argumento.
-#   Robot 1: 172.23.16.70 /tb4_1 (domain 1)    Robot 2: 172.23.16.88 /tb4_2 (domain 2)
-ROBOT_ID="${ROBOT_ID:-1}"
+# Robot por defecto: 2. Cambiar con ROBOT_ID=1 o pasando el robot como último argumento.
+#   Robot 2: 172.23.16.88 /tb4_2 (domain 2)    Robot 1: 172.23.16.70 /tb4_1 (domain 1)
+ROBOT_ID="${ROBOT_ID:-2}"
 REAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${REAL_DIR}/.." && pwd)"
 
-if [ "$ROBOT_ID" == "2" ]; then
-  TARGET_IP="172.23.16.88"; NS="/tb4_2"; DOMAIN_ID=2
-else
+if [ "$ROBOT_ID" == "1" ]; then
   TARGET_IP="172.23.16.70"; NS="/tb4_1"; DOMAIN_ID=1
+else
+  TARGET_IP="172.23.16.88"; NS="/tb4_2"; DOMAIN_ID=2
 fi
 
 export ROS_DISCOVERY_SERVER="${TARGET_IP}:11811"

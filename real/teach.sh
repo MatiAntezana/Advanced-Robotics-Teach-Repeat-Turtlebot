@@ -4,7 +4,7 @@
 # Mover el robot con real/teleop.sh; Ctrl+C aquí guarda la ruta y cierra el bag.
 set -e
 MODE="${1:-lidar}"
-ROBOT_ID="${2:-${ROBOT_ID:-1}}"
+ROBOT_ID="${2:-${ROBOT_ID:-2}}"
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 mkdir -p "${REPO_DIR}/routes" "${REPO_DIR}/evidence/laboratorio"
 

@@ -220,25 +220,25 @@ Los scripts de `real/` permiten ejecutar el sistema en los TurtleBot 4 del labor
 
 Para comunicarse con las plataformas, la estación de trabajo debe estar conectada a la misma red local (Wi-Fi/LAN) del laboratorio:
 
-- Robot 1 (por defecto): IP `172.23.16.70`, namespace `/tb4_1`, `ROS_DOMAIN_ID=1`.
+- Robot 2 (por defecto): IP `172.23.16.88`, namespace `/tb4_2`, `ROS_DOMAIN_ID=2`.
 
-- Robot 2: IP `172.23.16.88`, namespace `/tb4_2`, `ROS_DOMAIN_ID=2`.
+- Robot 1: IP `172.23.16.70`, namespace `/tb4_1`, `ROS_DOMAIN_ID=1`.
 
 La sincronización DDS se realiza mediante FastDDS Discovery Server apuntando al puerto `11811` del robot seleccionado (`ROS_DISCOVERY_SERVER="<IP>:11811"`). Los scripts gestionan estas variables de entorno, perfiles super-client y namespaces de forma automática.
 
 Para abrir una terminal interactiva con el entorno DDS cargado (útil para diagnósticos como `ros2 topic list` o `ros2 topic hz`):
 ```bash
-source real/env.sh 1   # Carga entorno para Robot 1 (o 'source real/env.sh 2' para Robot 2)
+source real/env.sh 2   # Carga entorno para Robot 2 (o 'source real/env.sh 1' para Robot 1)
 ```
 
 ### Enseñar y repetir una ruta
 
 #### 1. Teach
 
-En la primera terminal, iniciar el nodo Teach indicando el modo de localización (`encoders`, `lidar` o `mixed`) y el robot (`1` o `2`):
+En la primera terminal, iniciar el nodo Teach indicando el modo de localización (`encoders`, `lidar` o `mixed`) y el robot (`2` o `1`):
 ```bash
-./real/teach.sh mixed 1
-# Sintaxis: ./real/teach.sh [encoders|lidar|mixed] [1|2] (por defecto: lidar 1)
+./real/teach.sh mixed 2
+# Sintaxis: ./real/teach.sh [encoders|lidar|mixed] [2|1] (por defecto: lidar 2)
 ```
 El script graba automáticamente el rosbag del ensayo en `evidence/laboratorio/teach_bag_<modo>`.
 
@@ -246,8 +246,8 @@ El script graba automáticamente el rosbag del ensayo en `evidence/laboratorio/t
 
 En una segunda terminal, iniciar la teleoperación por teclado hacia el robot deseado:
 ```bash
-./real/teleop.sh 1
-# Sintaxis: ./real/teleop.sh [1|2] (por defecto: 1)
+./real/teleop.sh 2
+# Sintaxis: ./real/teleop.sh [2|1] (por defecto: 2)
 ```
 
 - Controles: `i` (avanzar), `,` (retroceder), `j` (girar izquierda), `l` (girar derecha), `k` (frenar).
@@ -258,8 +258,8 @@ En una segunda terminal, iniciar la teleoperación por teclado hacia el robot de
 
 En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los keyframes en tiempo real:
 ```bash
-./real/rviz.sh 1
-# Sintaxis: ./real/rviz.sh [1|2] (por defecto: 1)
+./real/rviz.sh 2
+# Sintaxis: ./real/rviz.sh [2|1] (por defecto: 2)
 ```
 
 #### 4. Guardar la ruta
@@ -268,7 +268,7 @@ En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los ke
 
 - Método manual (desde otra terminal):
   ```bash
-  source real/env.sh 1
+  source real/env.sh 2
   ros2 service call /tnr/save_route std_srvs/srv/Trigger '{}'
   ```
 
@@ -277,9 +277,9 @@ En una tercera terminal, visualizar las transformadas, el escaneo LiDAR y los ke
 1. Colocar físicamente el robot en la posición y orientación inicial del Teach.
 2. Ejecutar el script de repetición:
 ```bash
-./real/repeat.sh mixed 1
-# Sintaxis: ./real/repeat.sh [encoders|lidar|mixed] [1|2] (por defecto: lidar 1)
-# Opcional con RViz integrado: RVIZ=true ./real/repeat.sh mixed 1
+./real/repeat.sh mixed 2
+# Sintaxis: ./real/repeat.sh [encoders|lidar|mixed] [2|1] (por defecto: lidar 2)
+# Opcional con RViz integrado: RVIZ=true ./real/repeat.sh mixed 2
 ```
 El controlador polar guiará al robot a lo largo de los keyframes de `routes/lab_route_<modo>.json` y registrará las métricas de repetición en `evidence/laboratorio/repeat_bag_<modo>` hasta publicar `data: true` en `/tnr/done`.
 

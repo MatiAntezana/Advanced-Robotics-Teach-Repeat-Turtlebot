@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Teleoperación por teclado. Uso: real/teleop.sh [robot]
 set -e
-ROBOT_ID="${1:-${ROBOT_ID:-1}}"
+ROBOT_ID="${1:-${ROBOT_ID:-2}}"
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 echo "TELEOPERACION ROBOT ${ROBOT_ID} (${NS}/cmd_vel)"
