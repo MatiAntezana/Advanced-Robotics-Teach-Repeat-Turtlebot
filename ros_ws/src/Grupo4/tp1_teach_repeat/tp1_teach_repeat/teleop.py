@@ -15,8 +15,8 @@ def main(args=None):
     rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
     node = Node('tnr_teleop')
     stamped = node.declare_parameter('publish_stamped', True).value
-    speed = node.declare_parameter('speed', 0.12).value
-    turn = node.declare_parameter('turn', 0.6).value
+    speed = node.declare_parameter('speed', 0.30).value
+    turn = node.declare_parameter('turn', 1.2).value
     pub = node.create_publisher(TwistStamped if stamped else Twist, '/cmd_vel', 10)
 
     def send(v=0., w=0.):

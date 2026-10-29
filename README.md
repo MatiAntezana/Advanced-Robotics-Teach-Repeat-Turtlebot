@@ -70,7 +70,7 @@ Hay dos archivos de parámetros:
 | `icp_fitness` / `icp_rmse`| Ambos | `0.55` / `0.10` m | `0.50` / `0.12` m | Umbrales de solapamiento mínimo y RMSE residual aceptable para validar la pose ICP. |
 | `position_tolerance` | Ambos | `0.035` m (3.5 cm) | `0.040` m (4.0 cm) | Tolerancia de llegada al keyframe meta final. *(Para keyframes intermedios se expande a $\max(2 \times \text{tol}, 0.08\,\text{m})$ para marcha continua).* |
 | `yaw_tolerance` | Ambos | `0.06` rad (~3.4°) | `0.08` rad (~4.6°) | Tolerancia de alineación angular en la meta final *(en waypoints intermedios el rumbo es libre).* |
-| `max_v` / `max_w` | Ambos | `0.18` m/s / `1.0` rad/s | `0.22` m/s / `1.0` rad/s | Velocidad lineal y angular máximas del controlador polar. |
+| `max_v` / `max_w` | Ambos | `0.18` m/s / `1.0` rad/s | `0.30` m/s / `1.5` rad/s | Velocidad lineal y angular máximas del controlador polar (máxima velocidad física segura del TurtleBot 4). |
 | `k_rho`, `k_alpha`, `k_beta`, `k_yaw` | Ambos | `0.9`, `2.5`, `-0.6`, `1.5` | `1.2`, `2.2`, `-0.6`, `1.5` | Ganancias de control polar en lazo cerrado (estabilidad Lyapunov con $k_\rho > 0$, $k_\beta < 0$, $k_\alpha > k_\rho$). |
 
 ## Modos de localización

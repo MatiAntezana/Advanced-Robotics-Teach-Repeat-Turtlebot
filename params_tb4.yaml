@@ -23,8 +23,8 @@ tnr_controller:
   ros__parameters:
     control_rate: 20.0
     target_timeout: 0.8
-    max_v: 0.22
-    max_w: 1.0
+    max_v: 0.30
+    max_w: 1.5
     k_rho: 1.2
     k_alpha: 2.2
     k_beta: -0.6
